@@ -1,0 +1,30 @@
+# secrets / local config
+.env
+*.pem
+*.key
+
+# organizer materials kept locally (not part of the solution)
+/*.docx
+/scoring.txt
+
+# data with personal info (open/closed sets, uploads)
+data/
+uploads/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# node
+node_modules/
+frontend/dist/
+
+# ide / os
+.idea/
+.vscode/
+.DS_Store
+.claude/settings.local.json
