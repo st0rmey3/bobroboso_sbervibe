@@ -12,7 +12,7 @@ from app.config import settings
 from app.db import SessionLocal, init_db
 from app.extraction.pipeline import process_document
 from app.jobs import queue
-from app.llm import LLMError
+from app.llm import LLMError, get_ocr, get_provider
 from app.models import Document, DocumentStatus, Job
 
 log = logging.getLogger("worker")
@@ -83,6 +83,12 @@ def loop(n: int) -> None:
 def main() -> None:
     logs.setup()
     init_db()
+    try:  # fail fast on a typo in .env instead of failing every document later
+        llm, ocr = get_provider(), get_ocr()
+    except ValueError as e:
+        log.error("bad model settings in .env: %s", e)
+        raise SystemExit(1) from e
+    log.info("LLM: %s (%s); OCR: %s", llm.name, llm.model, ocr.name if ocr else "none (LLM reads images)")
     released = queue.release_own(socket.gethostname())
     if released:
         log.info("re-queued %d job(s) left running before restart", released)
@@ -91,7 +97,7 @@ def main() -> None:
     threads = [threading.Thread(target=loop, args=(i,), daemon=True) for i in range(settings.worker_concurrency)]
     for t in threads:
         t.start()
-    log.info("worker started: %d threads, provider=%s", len(threads), settings.llm_provider)
+    log.info("worker started: %d threads", len(threads))
     while not stop.is_set():
         time.sleep(0.5)
     for t in threads:

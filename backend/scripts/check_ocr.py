@@ -1,7 +1,8 @@
-"""Check the OCR service with the same settings and code path the worker uses.
+"""Check the configured OCR step with the same settings and code path the worker uses.
 
-Run:  docker compose exec worker python scripts/check_ocr.py [path/to/image_or_pdf]
-      (or locally from backend/:  OCR_BASE_URL=... python scripts/check_ocr.py file.jpg)
+Run on the stand:
+    docker compose cp "case_docs/СНИЛС Киселев Максим Васильевич.jpg" worker:/tmp/test.jpg
+    docker compose exec worker python scripts/check_ocr.py /tmp/test.jpg
 """
 
 import sys
@@ -14,37 +15,44 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.config import settings  # noqa: E402
 from app.extraction import preprocess  # noqa: E402
+from app.llm import get_ocr  # noqa: E402
 from app.llm.base import bearer  # noqa: E402
-from app.llm.ocr import OlmOcrProvider  # noqa: E402
+
+
+def check_server() -> None:
+    """Step 1: is the OCR server answering, and does it have our model?"""
+    if settings.ocr_provider == "ollama":
+        model = settings.ollama_ocr_model or settings.ollama_model
+        url, headers, key = f"{settings.ollama_url}/api/tags", {}, "models"
+    else:
+        model = settings.ocr_model
+        url, headers, key = f"{settings.ocr_base_url}/models", bearer(settings.ocr_api_key), "data"
+    t0 = time.monotonic()
+    try:
+        r = httpx.get(url, headers=headers, timeout=20)
+    except httpx.HTTPError as e:
+        sys.exit(f"[1/2] FAIL: {url} не отвечает ({type(e).__name__}: {e})")
+    items = r.json().get(key, []) if r.status_code == 200 else []
+    names = [m.get("name") or m.get("id") for m in items]
+    print(f"[1/2] {url} → HTTP {r.status_code} за {time.monotonic() - t0:.1f} с, модели: {names}")
+    if model not in names:
+        sys.exit(f"      FAIL: модели «{model}» нет на сервере — скачайте её или поправьте .env")
 
 
 def main() -> None:
-    print(f"OCR_PROVIDER={settings.ocr_provider}  OCR_BASE_URL={settings.ocr_base_url}  OCR_MODEL={settings.ocr_model}")
-
-    # 1. Is the server answering, and does it serve our model name?
-    t0 = time.monotonic()
-    try:
-        r = httpx.get(
-            f"{settings.ocr_base_url}/models",
-            headers=bearer(settings.ocr_api_key),
-            timeout=20,
-        )
-    except httpx.HTTPError as e:
-        sys.exit(f"[1/2] FAIL: server not answering /models ({type(e).__name__}: {e})")
-    models = [m["id"] for m in r.json().get("data", [])] if r.status_code == 200 else []
-    print(f"[1/2] /models → HTTP {r.status_code} in {time.monotonic() - t0:.1f}s, models: {models}")
-    if settings.ocr_model not in models:
-        sys.exit(f"      FAIL: OCR_MODEL '{settings.ocr_model}' is not served — set OCR_MODEL to one of {models}")
-
-    # 2. Recognize one page through our provider (same code as the worker).
+    print(f"OCR_PROVIDER={settings.ocr_provider}  LLM_PROVIDER={settings.llm_provider}")
+    ocr = get_ocr()
+    if ocr is None:
+        sys.exit("OCR_PROVIDER=none — отдельного OCR нет, модель читает изображение сама. Нечего проверять.")
+    check_server()
     if len(sys.argv) < 2:
-        print("[2/2] skipped: pass a file to test recognition")
+        print("[2/2] пропущено: передайте путь к файлу, чтобы проверить распознавание")
         return
     data = Path(sys.argv[1]).read_bytes()
     pages = preprocess.load(data, preprocess.sniff_mime(data) or "")
     t0 = time.monotonic()
-    text = OlmOcrProvider().read_page(pages.images[0])
-    print(f"[2/2] recognized page 1 in {time.monotonic() - t0:.1f}s, {len(text)} chars:\n{text[:800]}")
+    text = ocr.read_page(pages.images[0])
+    print(f"[2/2] страница распознана за {time.monotonic() - t0:.1f} с, {len(text)} символов:\n{text[:800]}")
 
 
 if __name__ == "__main__":
