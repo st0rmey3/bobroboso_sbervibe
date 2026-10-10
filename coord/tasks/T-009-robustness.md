@@ -2,7 +2,7 @@
 id: T-009
 title: Robustness: concurrency, restart mid-job, model failure, observability
 owner: claude
-status: todo
+status: doing
 prio: P1
 depends: T-001
 ---
