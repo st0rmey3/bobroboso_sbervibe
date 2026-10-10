@@ -44,6 +44,7 @@ def doc_slots(app: Application) -> list[dict]:
             best = max(candidates, key=lambda c: (bool(c.get("edited_by")), c["confidence"]), default=None)
             if best is None:
                 best = {"value": None, "confidence": 0.0, "issues": [], "document_id": None}
+            best = {**best, "label": spec.label}
             values = {c["value"] for c in candidates}
             if len(values) > 1 and not best.get("edited_by"):
                 best = {**best, "issues": [*best["issues"], "В файлах разные значения: " + " / ".join(sorted(values))]}

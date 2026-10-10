@@ -1505,6 +1505,11 @@
               }
             ],
             "title": "Document Id"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "default": ""
           }
         },
         "type": "object",

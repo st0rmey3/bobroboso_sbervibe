@@ -20,6 +20,7 @@ def test_front_and_back_merge_into_one_document():
     assert slot["missing_fields"] == []
     assert slot["fields"]["number"]["document_id"] == "f"
     assert slot["fields"]["valid_until"]["document_id"] == "b"
+    assert slot["fields"]["valid_until"]["label"] == "Действует до"
     assert slot["state"] == "ok"
 
 

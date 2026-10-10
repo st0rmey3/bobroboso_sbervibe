@@ -560,6 +560,11 @@ export interface components {
             edited_by?: string | null;
             /** Document Id */
             document_id: string | null;
+            /**
+             * Label
+             * @default
+             */
+            label: string;
         };
         /** ProcessingItem */
         ProcessingItem: {

@@ -58,6 +58,7 @@ class SlotPublic(BaseModel):
 
 class MergedField(ExtractedField):
     document_id: str | None  # file the value came from (edit goes there)
+    label: str = ""  # Russian field label (works for every document type, not only country sets)
 
 
 class SlotOperator(SlotPublic):
@@ -148,7 +149,7 @@ class ProcessingItem(BaseModel):
     filename: str
     status: DocumentStatus
     attempts: int
-    last_error: str | None
+    last_error: str | None  # human-readable (Russian) reason; raw technical error stays in worker logs
     created_at: datetime
     updated_at: datetime
 

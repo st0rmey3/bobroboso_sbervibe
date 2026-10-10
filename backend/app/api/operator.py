@@ -169,7 +169,7 @@ def processing(session: Session = Depends(get_session)) -> list[ProcessingItem]:
             filename=d.filename,
             status=d.status,
             attempts=j.attempts,
-            last_error=j.last_error,
+            last_error=d.status_reason if j.last_error else None,
             created_at=d.created_at,
             updated_at=d.updated_at,
         )
