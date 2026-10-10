@@ -2,7 +2,7 @@
 id: T-026
 title: README: Windows/PowerShell notes + troubleshooting (Keycloak, proxy, Ollama on CPU)
 owner: claude
-status: todo
+status: done
 prio: P1
 model: sonnet
 depends:
@@ -17,5 +17,7 @@ Everything the stand owner hit today goes into README «Если что-то н�
 ## Notes
 
 ## Thread
+
+- [claude] README: clone→.env→compose for Windows/Linux, what to fill in .env, one-command acceptance run, troubleshooting table from today's stand issues. .env.example defaults to the Sber model (only the key is missing).
 
 ## Result
