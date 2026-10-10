@@ -6,6 +6,7 @@ import socket
 import threading
 import time
 
+from app import logs
 from app.applications import audit, refresh_status
 from app.config import settings
 from app.db import SessionLocal, init_db
@@ -29,6 +30,7 @@ def _keepalive(job_id: int, done: threading.Event) -> None:
 
 
 def handle(job_id: int) -> None:
+    logs.context_id.set(f"job{job_id}")
     done = threading.Event()
     threading.Thread(target=_keepalive, args=(job_id, done), daemon=True).start()
     try:
@@ -79,7 +81,7 @@ def loop(n: int) -> None:
 
 
 def main() -> None:
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+    logs.setup()
     init_db()
     released = queue.release_own(socket.gethostname())
     if released:

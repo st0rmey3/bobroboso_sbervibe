@@ -1,15 +1,20 @@
 import logging
+import time
+import uuid
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI
-from sqlalchemy import text
+from fastapi import Depends, FastAPI, Request
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
+from app import logs
 from app.api import operator, public
 from app.config import settings
 from app.db import get_session, init_db
+from app.models import Job, JobStatus
 
-logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+logs.setup()
+log = logging.getLogger("http")
 
 
 @asynccontextmanager
@@ -23,7 +28,22 @@ app.include_router(public.router)
 app.include_router(operator.router)
 
 
+@app.middleware("http")
+async def request_log(request: Request, call_next):
+    rid = request.headers.get("X-Request-ID") or uuid.uuid4().hex[:12]
+    logs.context_id.set(rid)
+    t0 = time.monotonic()
+    response = await call_next(request)
+    response.headers["X-Request-ID"] = rid
+    log.info(
+        "%s %s → %d in %d ms", request.method, request.url.path, response.status_code, (time.monotonic() - t0) * 1000
+    )
+    return response
+
+
 @app.get("/api/health", tags=["service"])
 def health(session: Session = Depends(get_session)) -> dict:
     session.execute(text("select 1"))
-    return {"status": "ok", "llm_provider": settings.llm_provider}
+    counts = dict(session.execute(select(Job.status, func.count()).group_by(Job.status)).all())
+    queue = {s.value: counts.get(s, 0) for s in JobStatus}
+    return {"status": "ok", "llm_provider": settings.llm_provider, "queue": queue}

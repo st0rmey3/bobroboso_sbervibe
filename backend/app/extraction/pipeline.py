@@ -20,6 +20,7 @@ _MISSING = "Обязательное поле не найдено"
 def _stage(session: Session, doc: Document, status: DocumentStatus) -> None:
     doc.status = status
     session.commit()
+    log.info("document %s: stage %s", doc.id, status.value)
 
 
 def _finish(session: Session, doc: Document, status: DocumentStatus, reason: str | None, t0: float) -> None:
