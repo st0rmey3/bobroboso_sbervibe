@@ -1,7 +1,7 @@
 ---
 id: T-008
 title: Evaluation harness: per-field accuracy, type confusion, latency
-owner: unassigned
+owner: gemini
 status: todo
 prio: P1
 depends: T-003

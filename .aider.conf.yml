@@ -1,0 +1,4 @@
+# Aider: load the shared agent rules into every session.
+read:
+  - AGENTS.md
+auto-commits: false

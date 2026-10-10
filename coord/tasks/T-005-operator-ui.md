@@ -1,7 +1,7 @@
 ---
 id: T-005
 title: Operator workplace: queue, card with original + fields, edit, reprocess
-owner: unassigned
+owner: claude
 status: todo
 prio: P0
 depends: 

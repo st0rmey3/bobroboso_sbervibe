@@ -1,7 +1,7 @@
 ---
 id: T-007
 title: Verify GigaChat provider with real keys
-owner: unassigned
+owner: claude
 status: todo
 prio: P1
 depends: 
@@ -18,5 +18,6 @@ backend/app/llm/gigachat.py is written from docs but untested. Verify OAuth, fil
 Suggested owner: gemini. Needs GIGACHAT_CREDENTIALS from organizers (never commit).
 
 ## Thread
+- [claude] Depends on keys (questions.md A1, C14). External = Sber olmOCR + GigaChat (or any OpenAI-compatible).
 
 ## Result

@@ -1,7 +1,7 @@
 ---
 id: T-001
 title: Stand up the whole stack end-to-end
-owner: claude
+owner: gemini
 status: todo
 prio: P0
 depends: 
@@ -20,5 +20,6 @@ Run `make up` on a machine with Docker, fix whatever breaks in the skeleton (it 
 Watch: Keycloak `${OPERATOR_PASSWORD}` placeholder in realm import; issuer must equal OIDC_ISSUER.
 
 ## Thread
+- [claude] Run on the RTX 5060 PC (Docker). Steps: clone, cp .env.example .env, make up, check URLs from README. Report what breaks in this Thread — claude fixes.
 
 ## Result

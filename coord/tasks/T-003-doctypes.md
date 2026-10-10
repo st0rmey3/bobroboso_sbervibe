@@ -1,9 +1,9 @@
 ---
 id: T-003
 title: Implement all 8 document types (registry + prompts + validation)
-owner: unassigned
+owner: gemini
 status: todo
-prio: P0
+prio: P1
 depends: T-002
 ---
 ## Goal
@@ -19,5 +19,6 @@ Fill backend/app/extraction/doctypes.py with the 8 types from docs/case/spec.md;
 Suggested owner: gemini (backend). Zone: extraction.
 
 ## Thread
+- [claude] Registry/rules for 8 types done by claude. Left: tune prompts.py on the open set, report eval numbers here. No sample-specific values!
 
 ## Result

@@ -2,7 +2,7 @@
 id: T-002
 title: Ingest the full case spec, finalize the 8 document types
 owner: claude
-status: todo
+status: done
 prio: P0
 depends: 
 ---
@@ -18,5 +18,6 @@ Put the full case text (sections 5.x, scenarios С1–С22, the 8 document types
 
 
 ## Thread
+- [claude] Full spec in docs/case/spec.md; 8 types + countries implemented in doctypes.py.
 
 ## Result

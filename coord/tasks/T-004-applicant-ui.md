@@ -1,7 +1,7 @@
 ---
 id: T-004
 title: Applicant UI: document set, upload, live status, clear errors
-owner: unassigned
+owner: claude
 status: todo
 prio: P0
 depends: 
