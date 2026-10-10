@@ -1,4 +1,5 @@
-"""Document processing, called only from the worker. Stages are persisted so the UI shows honest progress."""
+"""Document processing, called only from the worker. Every stage is persisted, so the UI shows honest progress:
+preprocessing → recognizing (OCR, optional) → extracting (LLM) → validating → done | needs_review | unreadable."""
 
 import logging
 import time
@@ -8,12 +9,13 @@ from sqlalchemy.orm import Session
 
 from app import storage
 from app.extraction import doctypes, preprocess, prompts
-from app.llm import get_provider
+from app.llm import get_ocr, get_provider
 from app.models import Document, DocumentStatus
 
 log = logging.getLogger(__name__)
 
 CONFIDENCE_REVIEW_THRESHOLD = 0.6
+_MISSING = "Обязательное поле не найдено"
 
 
 def _stage(session: Session, doc: Document, status: DocumentStatus, heartbeat: Callable[[], None]) -> None:
@@ -22,62 +24,80 @@ def _stage(session: Session, doc: Document, status: DocumentStatus, heartbeat: C
     heartbeat()
 
 
+def _finish(session: Session, doc: Document, status: DocumentStatus, reason: str | None, t0: float) -> None:
+    doc.status, doc.status_reason = status, reason
+    doc.processing_ms = int((time.monotonic() - t0) * 1000)
+    session.commit()
+    log.info("document %s → %s (%s) in %d ms", doc.id, status.value, doc.detected_type, doc.processing_ms)
+
+
 def process_document(session: Session, doc: Document, heartbeat: Callable[[], None]) -> None:
     """Raises LLMError for the worker to retry. Sets a final status otherwise."""
     t0 = time.monotonic()
+    doc.status_reason = None
     _stage(session, doc, DocumentStatus.preprocessing, heartbeat)
     try:
         pages = preprocess.load(storage.read(doc.storage_key), doc.mime)
     except preprocess.UnreadableFile as e:
-        doc.status, doc.status_reason = DocumentStatus.unreadable, str(e)
-        session.commit()
-        return
+        return _finish(session, doc, DocumentStatus.unreadable, str(e), t0)
+
+    text, images = pages.text, pages.images
+    ocr = get_ocr()
+    if ocr is not None:
+        _stage(session, doc, DocumentStatus.recognizing, heartbeat)
+        page_texts = []
+        for img in pages.images:
+            page_texts.append(ocr.read_page(img))
+            heartbeat()
+        text = "\n\n".join(t for t in [pages.text, *page_texts] if t.strip())
+        images = []  # the LLM works on recognized text only
+        doc.ocr_text = text
+        if not text.strip():
+            return _finish(session, doc, DocumentStatus.unreadable, "На изображении не найден текст", t0)
 
     _stage(session, doc, DocumentStatus.extracting, heartbeat)
     llm = get_provider()
     cls = llm.complete_json(
         system=prompts.SYSTEM,
-        prompt=prompts.classify_prompt(pages.text),
+        prompt=prompts.classify_prompt(text),
         schema=doctypes.classification_schema(),
-        images=pages.images,
+        images=images,
     )
     heartbeat()
+    doc.llm_meta = {"provider": cls.provider, "model": cls.model, "ocr": ocr.name if ocr else None}
+    if cls.data.get("readable") is False:
+        reason = cls.data.get("reason") or "Документ не читается"
+        return _finish(session, doc, DocumentStatus.unreadable, f"{reason}. Загрузите более чёткое фото.", t0)
     detected = cls.data.get("doc_type")
-    doc.llm_meta = {"provider": cls.provider, "model": cls.model, "classify_ms": cls.latency_ms}
-    if not cls.data.get("readable", True):
-        doc.status = DocumentStatus.unreadable
-        doc.status_reason = cls.data.get("reason") or "Документ не читается: переснимите его чётче"
-        doc.processing_ms = int((time.monotonic() - t0) * 1000)
-        session.commit()
-        return
     if detected not in doctypes.DOC_TYPES:
         doc.detected_type = doctypes.UNKNOWN
-        doc.status = DocumentStatus.needs_review
-        doc.status_reason = "Не удалось определить тип документа"
-        doc.processing_ms = int((time.monotonic() - t0) * 1000)
-        session.commit()
-        return
+        return _finish(session, doc, DocumentStatus.needs_review, "Не удалось определить вид документа", t0)
 
     dt = doctypes.DOC_TYPES[detected]
     doc.detected_type = dt.code
     ext = llm.complete_json(
         system=prompts.SYSTEM,
-        prompt=prompts.extract_prompt(dt, pages.text),
+        prompt=prompts.extract_prompt(dt, text),
         schema=doctypes.extraction_schema(dt),
-        images=pages.images,
+        images=images,
     )
-    doc.llm_meta = {**doc.llm_meta, "extract_ms": ext.latency_ms}
 
     _stage(session, doc, DocumentStatus.validating, heartbeat)
     fields = doctypes.validate(dt, ext.data.get("fields") or {})
     doc.fields = fields
+    labels = {f.name: f.label for f in dt.fields}
     reasons = []
     if doc.declared_type and doc.declared_type != dt.code:
-        reasons.append(f"Загружен как «{doc.declared_type}», распознан как «{dt.label}»")
-    if any(f["issues"] or f["confidence"] < CONFIDENCE_REVIEW_THRESHOLD for f in fields.values()):
-        reasons.append("Есть поля, которые стоит перепроверить")
-    doc.status = DocumentStatus.needs_review if reasons else DocumentStatus.done
-    doc.status_reason = "; ".join(reasons) or None
-    doc.processing_ms = int((time.monotonic() - t0) * 1000)
-    session.commit()
-    log.info("document %s → %s (%s) in %d ms", doc.id, doc.status.value, dt.code, doc.processing_ms)
+        declared = doctypes.DOC_TYPES[doc.declared_type].label
+        reasons.append(f"Загружен как «{declared}», а распознан как «{dt.label}»")
+    missing = doctypes.missing_required(dt, fields)
+    if missing:
+        reasons.append("Не найдены обязательные поля: " + ", ".join(missing))
+    problems = [f"{labels[n]}: {i}" for n, f in fields.items() for i in f["issues"] if i != _MISSING]
+    if problems:
+        reasons.append("; ".join(problems))
+    unsure = [labels[n] for n, f in fields.items() if f["value"] and f["confidence"] < CONFIDENCE_REVIEW_THRESHOLD]
+    if unsure:
+        reasons.append("Перепроверьте: " + ", ".join(unsure))
+    status = DocumentStatus.needs_review if reasons else DocumentStatus.done
+    _finish(session, doc, status, ". ".join(reasons) or None, t0)

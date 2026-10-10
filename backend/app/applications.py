@@ -8,6 +8,7 @@ _USABLE = {DocumentStatus.done, DocumentStatus.needs_review}
 _IN_PROGRESS = {
     DocumentStatus.queued,
     DocumentStatus.preprocessing,
+    DocumentStatus.recognizing,
     DocumentStatus.extracting,
     DocumentStatus.validating,
 }

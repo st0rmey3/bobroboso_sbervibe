@@ -28,7 +28,8 @@ class ApplicationStatus(enum.StrEnum):
 class DocumentStatus(enum.StrEnum):
     queued = "queued"
     preprocessing = "preprocessing"
-    extracting = "extracting"  # model call in progress
+    recognizing = "recognizing"  # OCR: image → text
+    extracting = "extracting"  # LLM: text/image → fields
     validating = "validating"
     done = "done"
     needs_review = "needs_review"  # parsed, but low confidence / failed checks / type mismatch
@@ -48,7 +49,10 @@ class Application(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=new_id)
     status: Mapped[ApplicationStatus] = mapped_column(Enum(ApplicationStatus), default=ApplicationStatus.draft)
-    # doc type codes the applicant must provide (see extraction/doctypes.py)
+    full_name: Mapped[str] = mapped_column(String(255))  # as entered by the applicant
+    phone: Mapped[str | None] = mapped_column(String(32))
+    country: Mapped[str] = mapped_column(String(8), index=True)  # key of doctypes.COUNTRIES
+    # doc type codes required for the country (decided by the server, see extraction/doctypes.py)
     doc_set: Mapped[list[str]] = mapped_column(JSON, default=list)
     applicant_token_hash: Mapped[str] = mapped_column(String(64))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
@@ -75,6 +79,7 @@ class Document(Base):
     status_reason: Mapped[str | None] = mapped_column(Text)
     # {field_name: {"value": str|None, "confidence": float, "issues": [str]}}
     fields: Mapped[dict] = mapped_column(JSON, default=dict)
+    ocr_text: Mapped[str | None] = mapped_column(Text)  # what the model actually read (shown to the operator)
     llm_meta: Mapped[dict] = mapped_column(JSON, default=dict)  # provider, model, latency_ms
     processing_ms: Mapped[int | None] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)

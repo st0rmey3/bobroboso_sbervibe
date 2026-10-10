@@ -1,30 +1,38 @@
-"""Prompts are generic per document type — no sample-specific values (see AGENTS.md §1)."""
+"""Model prompts (case 5.3: prompts live in the repo). Generic per document type — no sample-specific values."""
 
 from app.extraction.doctypes import DOC_TYPES, DocType
 
 SYSTEM = (
-    "Ты — система распознавания документов отдела кадров. Работаешь только с тем, что видно на изображении. "
-    "Ничего не придумывай: если значения не видно или оно нечитаемо — value=null и низкая confidence. "
-    "confidence — число 0..1, насколько ты уверен в прочтении."
+    "Ты — система разбора документов кадрового агентства. Используй только то, что есть на изображении "
+    "или в распознанном тексте документа. Ничего не придумывай: если значение не видно или нечитаемо — "
+    "value=null и низкая confidence. confidence — число от 0 до 1: насколько ты уверен в прочтении. "
+    "Даты возвращай в формате ДД.ММ.ГГГГ. Отвечай только JSON."
 )
 
 
-def classify_prompt(text_layer: str) -> str:
+def _source(text: str) -> str:
+    if text.strip():
+        return f"\n\nРаспознанный текст документа:\n<<<\n{text[:8000]}\n>>>"
+    return "\n\nДокумент приложен изображениями."
+
+
+def classify_prompt(text: str) -> str:
     types = "\n".join(f"- {dt.code}: {dt.label}. {dt.description}" for dt in DOC_TYPES.values())
-    tail = f"\n\nТекстовый слой файла (может быть пустым):\n{text_layer[:3000]}" if text_layer else ""
     return (
-        "Определи тип документа на изображениях. Возможные типы:\n"
+        "Определи вид документа. Возможные виды:\n"
         f"{types}\n- unknown: ни один из перечисленных.\n"
-        "readable=false, если документ нельзя прочитать (размыт, обрезан, засвечен, пустой)." + tail
+        "readable=false, если документ нельзя прочитать (размыт, обрезан, засвечен, пустая страница); "
+        "тогда в reason коротко объясни по-русски, что не так." + _source(text)
     )
 
 
-def extract_prompt(dt: DocType, text_layer: str) -> str:
-    fields = "\n".join(
-        f"- {f.name}: {f.label}"
-        + (" (дата, формат ДД.ММ.ГГГГ)" if f.kind == "date" else "")
-        + (f"; {f.hint}" if f.hint else "")
-        for f in dt.fields
-    )
-    tail = f"\n\nТекстовый слой файла:\n{text_layer[:6000]}" if text_layer else ""
-    return f"Документ: {dt.label}. Извлеки поля:\n{fields}" + tail
+def extract_prompt(dt: DocType, text: str) -> str:
+    lines = []
+    for f in dt.fields:
+        line = f"- {f.name}: {f.label}"
+        if f.kind == "date":
+            line += " (дата)"
+        if f.hint:
+            line += f"; {f.hint}"
+        lines.append(line)
+    return f"Документ: {dt.label}. Извлеки поля:\n" + "\n".join(lines) + _source(text)

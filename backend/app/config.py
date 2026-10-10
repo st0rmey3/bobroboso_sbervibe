@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://app:app@localhost:5432/app"
     storage_dir: str = "/data/files"
     max_upload_mb: int = 20
+    max_files_per_application: int = 40
+    max_application_mb: int = 200
 
     # OIDC (Keycloak)
     oidc_issuer: str = "http://localhost:8080/realms/docs"
@@ -29,8 +31,16 @@ class Settings(BaseSettings):
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
 
+    # OCR (separate text-recognition model); "none" = LLM reads images itself
+    ocr_provider: str = "none"  # olmocr | none
+    ocr_base_url: str = "http://localhost:8000/v1"
+    ocr_api_key: str = ""
+    ocr_model: str = "allenai/olmOCR-2-7B-1025-FP8"
+    ocr_timeout_s: float = 180
+    ocr_max_tokens: int = 3000
+
     # Worker
-    worker_concurrency: int = 2
+    worker_concurrency: int = 4
     job_lease_s: int = 300
     job_max_attempts: int = 3
 

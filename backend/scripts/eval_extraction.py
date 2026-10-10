@@ -15,7 +15,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.extraction import doctypes, preprocess, prompts  # noqa: E402
-from app.llm import get_provider  # noqa: E402
+from app.llm import get_ocr, get_provider  # noqa: E402
 
 
 def norm(v: str | None) -> str:
@@ -23,18 +23,21 @@ def norm(v: str | None) -> str:
 
 
 def main(folder: str) -> None:
-    llm = get_provider()
+    llm, ocr = get_provider(), get_ocr()
     total = hits = type_ok = n = 0
     for label in sorted(Path(folder).glob("*.json")):
         expected = json.loads(label.read_text())
         src = next(p for p in label.parent.glob(label.stem + ".*") if p.suffix != ".json")
         data = src.read_bytes()
         pages = preprocess.load(data, preprocess.sniff_mime(data) or "")
+        text, images = pages.text, pages.images
+        if ocr is not None:  # same order as the pipeline: OCR text → LLM without images
+            text, images = "\n\n".join([pages.text, *(ocr.read_page(i) for i in pages.images)]), []
         cls = llm.complete_json(
             system=prompts.SYSTEM,
-            prompt=prompts.classify_prompt(pages.text),
+            prompt=prompts.classify_prompt(text),
             schema=doctypes.classification_schema(),
-            images=pages.images,
+            images=images,
         )
         n += 1
         got_type = cls.data.get("doc_type")
@@ -44,9 +47,9 @@ def main(folder: str) -> None:
             continue
         ext = llm.complete_json(
             system=prompts.SYSTEM,
-            prompt=prompts.extract_prompt(dt, pages.text),
+            prompt=prompts.extract_prompt(dt, text),
             schema=doctypes.extraction_schema(dt),
-            images=pages.images,
+            images=images,
         )
         got = doctypes.validate(dt, ext.data.get("fields") or {})
         for name, want in expected["fields"].items():
