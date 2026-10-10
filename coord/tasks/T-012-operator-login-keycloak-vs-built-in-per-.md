@@ -1,8 +1,8 @@
 ---
 id: T-012
-title: Operator login: Keycloak vs built-in, per case holder answer
+title: Operator login via OIDC + Keycloak (mandatory) — verify end-to-end
 owner: claude
-status: todo
+status: review
 prio: P0
 depends:
 ---
@@ -18,3 +18,4 @@ Case 3.3 says login+password; we were told OIDC/Keycloak. Decide by questions.md
 ## Thread
 
 ## Result
+Keycloak is mandatory (organizers). Token check covered by tests/test_auth.py (forged/expired/issuer/client/role).

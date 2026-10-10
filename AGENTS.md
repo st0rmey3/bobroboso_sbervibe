@@ -5,9 +5,10 @@ parses them with an LLM **in the background** → an operator reviews/edits resu
 
 Team (6 h of coding!):
 - captain — Claude Code (orchestrator; core + most features, incl. frontend while Codex is away). Name: `claude`.
-- backend dev — Aider / PyCharm plugin on free Gemini API (rate-limited → small, fully specified tasks).
-  Owns the PC with Docker + Ollama + RTX 5060 8 GB → demo stand host, local model, eval runs. Name: `gemini`.
-- Codex/GPT — may join later (frontend). Name: `codex`. DeepSeek harness = fallback for anyone (`deepseek`).
+- stand & local model — owns the PC with Docker + Ollama + RTX 5060 8 GB (Gemini doesn't work on the venue Wi-Fi →
+  tasks must be doable by hand or with DeepSeek). Demo stand host, local model, labels for the open set. Name: `gemini`.
+- frontend dev — Codex/GPT: both interfaces (applicant + operator). Name: `codex`.
+DeepSeek harness = fallback for anyone (`deepseek`).
 Every human must have commits under their own git name (case 5.4: ≥15 meaningful commits, whole team visible).
 
 Grading: `docs/case/criteria.md` (admission Д1–Д12 + 100 pts + disqualifiers). Full case text: `docs/case/spec.md`
@@ -25,7 +26,7 @@ Read them before design decisions, not every session.
 - **Async.** Upload returns immediately (`202`). Parsing happens only in the worker. Never call the model from an HTTP handler.
 - **Honest states.** A document becomes `done` only after a real successful model call. Failures → `failed` / `unreadable` / `needs_review` with a human-readable reason (Russian).
 - **Restart-safe.** Jobs are leased rows in Postgres; an expired lease is re-claimed. Don't add state that a restart loses.
-- **Closed operator side.** Every `/api/operator/*` route and every file download requires a valid OIDC token with role `operator`, checked **on the server**. Frontend guards are cosmetic.
+- **Closed operator side (OIDC + Keycloak — mandatory).** Every `/api/operator/*` route and every file download requires a valid Keycloak access token with role `operator`, checked **on the server** (`auth.require_operator`). Frontend guards are cosmetic.
 - **Server-side validation** of uploads: size, real type by magic bytes, duplicates (sha256), doc-set rules. Clear Russian error messages.
 - **Model isolation.** Model calls only via `backend/app/llm/` (`get_provider()`; provider chosen by `LLM_PROVIDER`). No vendor SDKs/URLs anywhere else.
 - **No secrets in git.** Config via env only; every new var goes to `.env.example` with a dummy value.
@@ -56,17 +57,17 @@ backend/app/main.py            FastAPI app, routers, startup (create tables)
 backend/app/config.py          all settings (env)
 backend/app/models.py          SQLAlchemy models + status enums  ← single source of statuses
 backend/app/schemas.py         API request/response models        ← HTTP contract
-backend/app/auth.py            OIDC (Keycloak) token check, require_operator
+backend/app/auth.py            OIDC: Keycloak access token check (JWKS, issuer, azp, role) → require_operator
 backend/app/storage.py         uploaded files on the `files` volume
 backend/app/api/public.py      applicant API (no login; per-application token)
-backend/app/api/operator.py    operator API (OIDC, role operator)
+backend/app/api/operator.py    operator API (Bearer token, role operator)
 backend/app/jobs/queue.py      Postgres job queue: enqueue / claim (SKIP LOCKED + lease)
 backend/app/jobs/worker.py     worker process: claim → pipeline → retry/fail
 backend/app/llm/               model layer: LLM providers (ollama local, gigachat, openai_compat) + ocr.py (olmOCR)
 backend/app/extraction/        doctypes.py (countries, 8 doc types, fields, rules), preprocess, prompts, pipeline
 backend/scripts/               export_openapi.py, eval_extraction.py
-frontend/src/                  React SPA: /  (applicant)   /operator/* (operator, OIDC)
-keycloak/realm-docs.json       realm import: client operator-ui, role operator, demo user
+frontend/src/                  React SPA: /  (applicant)   /operator/* (operator, OIDC code+PKCE via oidc-client-ts)
+keycloak/realm-docs.json       realm import: client operator-ui, role operator, user operator (password from env)
 coord/tasks/                   task files (the inter-agent channel)
 docs/                          criteria, spec, architecture, decisions, llm (judge-facing, Russian)
 ```
@@ -106,7 +107,7 @@ docs/                          criteria, spec, architecture, decisions, llm (jud
 | extraction | `backend/app/extraction/`, `backend/scripts/eval_extraction.py` | claude (rules) · gemini (prompt tuning, eval) |
 | backend features | `backend/app/api/`, new modules under `backend/app/` | per task |
 | local model & stand | `docs/local-model.md`, `ollama/`, stand runs | gemini |
-| frontend | `frontend/` | claude (codex if joins) |
+| frontend | `frontend/` | codex |
 
 Outside your zone: only through a task assigned to you or an agreement in a Thread.
 `models.py` / `schemas.py` are shared hot spots: small additive edits are fine, mention them in your commit message.
@@ -123,5 +124,9 @@ make reset                        # drop all volumes (DB schema changed → need
 scripts/board.sh                  # task board
 ```
 URLs: applicant http://localhost:3000 · operator http://localhost:3000/operator · API docs http://localhost:8000/docs ·
-Keycloak http://localhost:8080 (admin creds in `.env`).
-Frontend dev without Docker: `cd frontend && npm i && npm run dev` (http://localhost:5173, proxies `/api` → :8000).
+Keycloak http://localhost:8080 (admin = KC_BOOTSTRAP_ADMIN_* from `.env`); operator login = `operator` / OPERATOR_PASSWORD.
+Dev without full Docker stack (SQLite for the app; Keycloak still via Docker: `docker compose up -d keycloak`):
+  backend:  cd backend && pip install -e ".[dev]" && DATABASE_URL=sqlite:///./dev.db STORAGE_DIR=./dev_files \
+            OIDC_JWKS_URL=http://localhost:8080/realms/docs/protocol/openid-connect/certs uvicorn app.main:app --reload
+            (+ same env in a 2nd terminal: python -m app.jobs.worker)
+  frontend: cd frontend && npm i && npm run dev   → http://localhost:5173 (proxies /api → :8000)

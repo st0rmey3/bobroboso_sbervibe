@@ -1,7 +1,7 @@
 ---
 id: T-003
 title: Implement all 8 document types (registry + prompts + validation)
-owner: gemini
+owner: claude
 status: todo
 prio: P1
 depends: T-002
