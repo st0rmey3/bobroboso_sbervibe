@@ -100,3 +100,26 @@ def test_phone_photo_orientation_and_webp():
     img.save(webp, "WEBP")
     assert preprocess.sniff_mime(webp.getvalue()) == "image/webp"
     assert preprocess.load(webp.getvalue(), "image/webp").images
+
+
+def test_two_digit_year():
+    assert doctypes.parse_date("27.04.94").isoformat() == "1994-04-27"
+
+
+def test_values_must_occur_in_recognized_text():
+    ocr = "РЕСПУБЛИКА БЕЛАРУСЬ  PASSPORT No MP6922523\nSurname SIDARENKA\nGiven names DZMITRY\nВУ-7364050"
+    fields = {
+        "number": {"value": "MP6922523", "confidence": 1.0, "issues": []},
+        "full_name": {"value": "SIDARENKA ANDREI", "confidence": 1.0, "issues": []},  # ANDREI is not in the text
+        "personal_number": {"value": "BY7364050", "confidence": 1.0, "issues": []},  # Cyrillic/Latin look-alikes
+    }
+    doctypes.check_grounded(DT["passport_by"], fields, ocr)
+    assert fields["number"]["issues"] == [] and fields["personal_number"]["issues"] == []
+    assert fields["full_name"]["issues"] == [doctypes.NOT_IN_TEXT]
+    assert fields["full_name"]["confidence"] == 0.4
+
+
+def test_grounding_skipped_without_text():
+    fields = {"number": {"value": "X1", "confidence": 0.9, "issues": []}}
+    doctypes.check_grounded(DT["passport_by"], fields, "")
+    assert fields["number"]["issues"] == []

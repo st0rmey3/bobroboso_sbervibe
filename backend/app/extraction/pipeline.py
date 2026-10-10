@@ -82,6 +82,7 @@ def process_document(session: Session, doc: Document) -> None:
 
     _stage(session, doc, DocumentStatus.validating)
     fields = doctypes.validate(dt, doctypes.fields_from(ext.data))
+    doctypes.check_grounded(dt, fields, text)  # values must come from the file, not from the model's imagination
     doc.fields = fields
     labels = {f.name: f.label for f in dt.fields}
     reasons = []

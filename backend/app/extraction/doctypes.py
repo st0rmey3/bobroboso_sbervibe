@@ -216,7 +216,8 @@ def extraction_schema(dt: DocType) -> dict:
 
 
 def parse_date(value: str) -> date | None:
-    for fmt in ("%Y-%m-%d", "%d.%m.%Y", "%d/%m/%Y", "%d-%m-%Y", "%d %m %Y", "%d %b %Y", "%d %B %Y"):
+    formats = ("%Y-%m-%d", "%d.%m.%Y", "%d/%m/%Y", "%d-%m-%Y", "%d %m %Y", "%d %b %Y", "%d %B %Y")
+    for fmt in (*formats, "%d.%m.%y", "%d/%m/%y"):  # two-digit years: 94 → 1994, 27 → 2027
         try:
             return datetime.strptime(value.strip().title(), fmt).date()
         except ValueError:
@@ -280,3 +281,31 @@ def validate(dt: DocType, raw_fields: dict, today: date | None = None) -> dict[s
 def missing_required(dt: DocType, fields: dict[str, dict]) -> list[str]:
     """Labels of minimum fields without a value → the document counts as not parsed."""
     return [f.label for f in dt.fields if f.required and not fields.get(f.name, {}).get("value")]
+
+
+# Letters that look the same in Cyrillic and Latin — OCR mixes them up (ВУ-123 vs BY-123).
+_HOMOGLYPHS = str.maketrans("АВЕКМНОРСТУХЁ", "ABEKMHOPCTYXE")
+
+
+def _norm_text(text: str) -> str:
+    return "".join(ch for ch in text.upper().translate(_HOMOGLYPHS) if ch.isalnum())
+
+
+NOT_IN_TEXT = "Нет в распознанном тексте — сверьте с оригиналом"
+
+
+def check_grounded(dt: DocType, fields: dict[str, dict], text: str) -> None:
+    """Anti-hallucination: when we have the recognized text (OCR or PDF layer), every word of a non-date value must
+    occur in it. Otherwise the model made it up → low confidence + issue for the operator. Mutates `fields`."""
+    haystack = _norm_text(text)
+    if len(haystack) < 20:  # no usable text to compare with
+        return
+    kinds = {f.name: f.kind for f in dt.fields}
+    for name, item in fields.items():
+        value = item.get("value")
+        if not value or kinds.get(name) == "date":
+            continue
+        words = [w for w in (_norm_text(part) for part in value.split()) if len(w) >= 2]
+        if words and not all(w in haystack for w in words):
+            item["issues"] = [*item["issues"], NOT_IN_TEXT]
+            item["confidence"] = min(item["confidence"], 0.4)
