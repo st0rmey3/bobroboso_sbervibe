@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 import httpx
 
 from app.config import settings
-from app.llm.base import LLMError
+from app.llm.base import LLMError, bearer
 
 # olmOCR is fine-tuned on this exact prompt (olmocr.prompts.build_no_anchoring_v4_yaml_prompt) — keep it verbatim.
 OLMOCR_PROMPT = (
@@ -48,7 +48,7 @@ class OlmOcrProvider(OcrProvider):
         self._client = httpx.Client(
             base_url=settings.ocr_base_url,
             timeout=settings.ocr_timeout_s,
-            headers={"Authorization": f"Bearer {settings.ocr_api_key}"},
+            headers=bearer(settings.ocr_api_key),
         )
 
     def read_page(self, image: bytes) -> str:

@@ -72,3 +72,10 @@ def test_olmocr_front_matter_is_removed():
 def test_sniff_mime_ignores_extension():
     assert sniff_mime(b"%PDF-1.7 ...") == "application/pdf"
     assert sniff_mime(b"MZ\x90\x00") is None
+
+
+def test_no_empty_bearer_header():
+    from app.llm.base import bearer
+
+    assert bearer("") == {}
+    assert bearer("k") == {"Authorization": "Bearer k"}

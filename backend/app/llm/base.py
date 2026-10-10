@@ -47,6 +47,12 @@ def parse_json(raw: str) -> dict:
         raise LLMError(f"model returned invalid JSON: {e}") from e
 
 
+def bearer(api_key: str) -> dict:
+    """Authorization header only when a key is set: some servers (e.g. Sber's OCR) run without a key,
+    and an empty "Bearer " header is rejected by the HTTP client."""
+    return {"Authorization": f"Bearer {api_key}"} if api_key else {}
+
+
 def schema_hint(schema: dict) -> str:
     """For providers without native structured output: put the schema into the prompt."""
     return "Ответь строго одним JSON-объектом по этой JSON Schema, без пояснений:\n" + json.dumps(

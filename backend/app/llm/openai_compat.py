@@ -7,7 +7,7 @@ from collections.abc import Sequence
 import httpx
 
 from app.config import settings
-from app.llm.base import LLMError, LLMProvider, LLMResponse, parse_json, schema_hint
+from app.llm.base import LLMError, LLMProvider, LLMResponse, bearer, parse_json, schema_hint
 
 
 class OpenAICompatProvider(LLMProvider):
@@ -18,7 +18,7 @@ class OpenAICompatProvider(LLMProvider):
         self._client = httpx.Client(
             base_url=settings.openai_base_url,
             timeout=settings.llm_timeout_s,
-            headers={"Authorization": f"Bearer {settings.openai_api_key}"},
+            headers=bearer(settings.openai_api_key),
         )
 
     def complete_json(self, *, system: str, prompt: str, schema: dict, images: Sequence[bytes] = ()) -> LLMResponse:
