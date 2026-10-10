@@ -1,5 +1,6 @@
 """Operator API. Every route requires a Keycloak token with role `operator` (router-level dependency)."""
 
+from datetime import timedelta
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -15,7 +16,7 @@ from app.db import get_session
 from app.exports import card_csv, expiring_csv, expiring_rows
 from app.extraction.doctypes import DOC_TYPES, validate
 from app.jobs import queue
-from app.models import Application, ApplicationStatus, AuditEvent, Document, DocumentStatus, Job, JobStatus
+from app.models import Application, ApplicationStatus, AuditEvent, Document, DocumentStatus, Job, JobStatus, utcnow
 from app.schemas import (
     ApplicationListItem,
     ApplicationOperator,
@@ -28,6 +29,8 @@ from app.schemas import (
     QueueStats,
     SlotOperator,
 )
+
+FILE_VIEW_DEDUP_MIN = 10
 
 IN_PROGRESS = [
     DocumentStatus.queued,
@@ -109,8 +112,23 @@ def get_application(app_id: str, session: Session = Depends(get_session)) -> App
 
 
 @router.get("/documents/{doc_id}/file")
-def document_file(doc_id: str, session: Session = Depends(get_session)) -> FileResponse:
+def document_file(
+    doc_id: str, op: Operator = Depends(require_operator), session: Session = Depends(get_session)
+) -> FileResponse:
+    """Original file (personal data). Every view is logged — at most once per operator, document and 10 minutes."""
     doc = _doc(session, doc_id)
+    actor = f"operator:{op.username}"
+    recent = session.scalar(
+        select(AuditEvent.id).where(
+            AuditEvent.document_id == doc.id,
+            AuditEvent.actor == actor,
+            AuditEvent.action == "file_viewed",
+            AuditEvent.created_at > utcnow() - timedelta(minutes=FILE_VIEW_DEDUP_MIN),
+        )
+    )
+    if recent is None:
+        audit(session, doc.application_id, actor, "file_viewed", doc.id, filename=doc.filename)
+        session.commit()
     return FileResponse(storage.path(doc.storage_key), media_type=doc.mime, content_disposition_type="inline")
 
 

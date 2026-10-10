@@ -2,7 +2,7 @@
 id: T-025
 title: Bonus (PII access): audit who opened an original file; show in history
 owner: claude
-status: todo
+status: done
 prio: P1
 model: sonnet
 depends:
@@ -20,3 +20,4 @@ Bonus «ограничение доступа к файлам с ПДн»: files
 ## Thread
 
 ## Result
+GET /documents/{id}/file writes audit `file_viewed` (operator, filename), deduplicated per operator+document for 10 min. Test + live check: 3 views → 1 event.

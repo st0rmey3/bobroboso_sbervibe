@@ -20,5 +20,6 @@ Gap: open-set kinds (ВУ РФ/Киргизии, паспорт Беларуси
 ## Notes
 
 ## Thread
+- [claude] Also: history action `file_viewed` → label «Открыт оригинал» (data.filename) in ApplicationCard `actions` map.
 
 ## Result
