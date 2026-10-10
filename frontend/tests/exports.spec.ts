@@ -30,6 +30,7 @@ function cardFixture(): ApplicationOperator {
     phone: null,
     country: "RU",
     status: "ready",
+    cross_checks: [],
     created_at: "2026-10-10T08:00:00Z",
     doc_set: ["passport_by"],
     missing: [],
@@ -168,6 +169,41 @@ test("uncatalogued fields keep server labels and card CSV preserves Cyrillic fil
   expect(await bytes(download)).toEqual(cardCsv);
   await expect(page.getByText("Карточка выгружена в CSV", { exact: true })).toBeVisible();
   await page.screenshot({ path: "test-results/export-card.png", fullPage: true });
+});
+
+test("card shows server cross-document warnings before fields and clears them after correction", async ({ page }) => {
+  const app = cardFixture();
+  app.cross_checks = [
+    "ФИО в заявке «Тестовый Соискатель» не совпадает с документом «Другой Соискатель» (Паспорт Беларуси)",
+    "Дата рождения различается: 1990-01-01 (Паспорт Беларуси), 1991-01-01 (Патент)",
+  ];
+  await serveCard(page, app);
+  await page.goto(`/operator/applications/${app.id}`);
+  const warnings = page.getByRole("region", { name: "Расхождения между документами" });
+  await expect(warnings).toBeVisible();
+  await expect(warnings.getByRole("listitem")).toHaveText(app.cross_checks);
+  const precedesFields = await warnings.evaluate((element) =>
+    Boolean(
+      element.compareDocumentPosition(document.querySelector(".review-slot")!) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ),
+  );
+  expect(precedesFields).toBe(true);
+  await page.screenshot({ path: "test-results/cross-document-warnings.png", fullPage: true });
+  app.cross_checks = [];
+  await page.reload();
+  await expect(page.getByLabel("Номер", { exact: true })).toHaveValue("TEST123");
+  await expect(warnings).toHaveCount(0);
+});
+
+test("card without cross-document warnings keeps fields and history labels without an empty banner", async ({
+  page,
+}) => {
+  const app = await serveCard(page);
+  await page.goto(`/operator/applications/${app.id}`);
+  await expect(page.getByLabel("ФИО", { exact: true })).toHaveValue(app.full_name);
+  await expect(page.getByRole("heading", { name: "Расхождения между документами" })).toHaveCount(0);
+  await expect(page.getByText("Номер: TEST12 → TEST123")).toBeVisible();
+  await expect(page.getByText("Поле документа", { exact: false })).toHaveCount(0);
 });
 
 test("expiry list distinguishes expired, today and future and exports the selected period", async ({ page }) => {

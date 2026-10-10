@@ -64,6 +64,16 @@ function Card({ id, countries }: { id: string; countries: Country[] }) {
                 .join(", ")}
             </p>
           )}
+          {Boolean(app.cross_checks?.length) && (
+            <section className="notice warning" aria-labelledby="cross-checks-heading">
+              <h2 id="cross-checks-heading">Расхождения между документами</h2>
+              <ul>
+                {app.cross_checks!.map((warning, index) => (
+                  <li key={`${index}-${warning}`}>{warning}</li>
+                ))}
+              </ul>
+            </section>
+          )}
           {app.slots.map((slot) => (
             <Slot
               key={slot.doc_type}
