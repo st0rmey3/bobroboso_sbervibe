@@ -2,7 +2,7 @@
 id: T-004
 title: Applicant UI: country, doc checklist, multi-file upload, live status, re-upload
 owner: codex
-status: todo
+status: doing
 prio: P0
 model: codex
 depends:
@@ -44,5 +44,6 @@ ask the captain for the values in a private message (never commit them). Without
 fine for UI work.
 
 ## Thread
+- [codex] Implementing the applicant UI against generated API types; verification includes build and mobile layout.
 
 ## Result

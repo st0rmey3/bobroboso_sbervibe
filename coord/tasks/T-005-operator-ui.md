@@ -2,7 +2,7 @@
 id: T-005
 title: Operator workplace: list+filters, card with original next to fields, edit, reprocess, in-progress view
 owner: codex
-status: todo
+status: doing
 prio: P0
 model: codex
 depends:
@@ -46,5 +46,6 @@ No mock data anywhere — only server data (disqualification otherwise).
 Same dev setup as T-004, plus `docker compose up -d keycloak` (login `operator` / OPERATOR_PASSWORD from `.env`). Statuses' Russian labels — only in `src/statusLabels.ts`.
 
 ## Thread
+- [codex] Implementing the operator workplace against existing OIDC and server APIs; no contract changes planned.
 
 ## Result
