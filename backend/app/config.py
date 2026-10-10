@@ -34,7 +34,8 @@ class Settings(BaseSettings):
     openai_disable_thinking: bool = False  # Qwen3-style models on vLLM: skip reasoning, ~3x faster
 
     # OCR (separate text-recognition model); "none" = LLM reads images itself
-    ocr_provider: str = "none"  # olmocr | ollama | none
+    ocr_provider: str = "none"  # olmocr | ollama | tesseract | none
+    tesseract_lang: str = "rus+eng"
     ollama_ocr_model: str = ""  # local OCR model; empty = OLLAMA_MODEL
     ocr_base_url: str = "http://localhost:8000/v1"
     ocr_api_key: str = ""

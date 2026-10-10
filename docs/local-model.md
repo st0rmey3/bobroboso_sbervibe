@@ -56,7 +56,27 @@ make up-local-llm          # = docker compose --profile local-llm up -d + ollama
 В `.env`: `LLM_PROVIDER=ollama`, `OLLAMA_URL=http://ollama:11434`, `OCR_PROVIDER=none`, затем
 `docker compose up -d backend worker`. Для GPU в Docker нужен NVIDIA Container Toolkit.
 
-## 3a. Локальный OCR (по желанию)
+## 3б. Если модель с картинками не помещается в видеокарту (8 ГБ) — Tesseract + текстовая модель
+Модели, понимающие изображения, резервируют в видеопамяти большой буфер под картинку: у `qwen2.5vl:3b` на стенде
+это 3,2 ГБ весов + 6,7 ГБ буфера — больше, чем свободно на RTX 5060 8 ГБ, и Ollama уходит на процессор
+(`ollama ps` → `100% CPU`, в логе `offloaded 0/37 layers to GPU`). Тогда работу делим:
+- текст со страницы читает **Tesseract** на процессоре (уже установлен в образе backend, лицензия Apache-2.0);
+- поля из текста извлекает **маленькая текстовая модель** на видеокарте — у неё нет буфера под картинки.
+```bash
+ollama pull qwen2.5:3b
+```
+В `.env`:
+```
+LLM_PROVIDER=ollama
+OLLAMA_MODEL=qwen2.5:3b
+OCR_PROVIDER=tesseract
+WORKER_CONCURRENCY=2
+```
+`docker compose up -d --build backend worker`. Сначала можно попробовать уместить модель с картинками: в Windows
+`setx OLLAMA_FLASH_ATTENTION 1` и `setx OLLAMA_KV_CACHE_TYPE q8_0`, перезапустить Ollama, закрыть приложения,
+занимающие видеопамять.
+
+## 3a. Локальный OCR через модель с картинками (по желанию)
 Можно разделить работу на два шага, как с olmOCR: локальная модель сначала распознаёт текст страницы,
 затем из текста извлекаются поля. В `.env`:
 ```

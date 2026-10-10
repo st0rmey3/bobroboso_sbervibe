@@ -2,10 +2,13 @@
 
 OCR_PROVIDER=olmocr — olmOCR-2 served by vLLM behind an OpenAI-compatible API (Sber's server or self-hosted).
 OCR_PROVIDER=ollama — local OCR: a vision model in Ollama transcribes the page (nothing leaves the machine).
+OCR_PROVIDER=tesseract — local classic OCR on the CPU (Tesseract, Apache-2.0), ~1–2 s per page, no GPU needed;
+                         pair it with a small TEXT model in Ollama for field extraction.
 OCR_PROVIDER=none   — no separate OCR: the LLM provider reads page images itself (vision model, e.g. local Ollama).
 """
 
 import base64
+import subprocess
 from abc import ABC, abstractmethod
 
 import httpx
@@ -108,11 +111,35 @@ class OllamaOcrProvider(OcrProvider):
         return r.json()["message"]["content"].strip()
 
 
+class TesseractOcrProvider(OcrProvider):
+    """Runs the `tesseract` CLI (installed in the backend image). Image in via stdin, text out via stdout."""
+
+    name = "tesseract"
+
+    def read_page(self, image: bytes) -> str:
+        try:
+            done = subprocess.run(
+                ["tesseract", "stdin", "stdout", "-l", settings.tesseract_lang, "--psm", "3"],
+                input=image,
+                capture_output=True,
+                timeout=settings.ocr_timeout_s,
+            )
+        except FileNotFoundError as e:
+            raise LLMError("tesseract is not installed in this image", retryable=False) from e
+        except subprocess.TimeoutExpired as e:
+            raise LLMError("tesseract timed out") from e
+        if done.returncode != 0:
+            raise LLMError(f"tesseract failed: {done.stderr.decode(errors='replace')[:300]}", retryable=False)
+        return done.stdout.decode("utf-8", errors="replace").strip()
+
+
 def get_ocr() -> OcrProvider | None:
     if settings.ocr_provider == "olmocr":
         return OlmOcrProvider()
     if settings.ocr_provider == "ollama":
         return OllamaOcrProvider()
+    if settings.ocr_provider == "tesseract":
+        return TesseractOcrProvider()
     if settings.ocr_provider == "none":
         return None
     raise ValueError(f"unknown OCR_PROVIDER: {settings.ocr_provider}")

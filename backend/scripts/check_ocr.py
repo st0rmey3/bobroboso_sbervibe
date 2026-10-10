@@ -44,7 +44,8 @@ def main() -> None:
     ocr = get_ocr()
     if ocr is None:
         sys.exit("OCR_PROVIDER=none — отдельного OCR нет, модель читает изображение сама. Нечего проверять.")
-    check_server()
+    if settings.ocr_provider != "tesseract":  # tesseract runs inside the container, no server to ask
+        check_server()
     if len(sys.argv) < 2:
         print("[2/2] пропущено: передайте путь к файлу, чтобы проверить распознавание")
         return
