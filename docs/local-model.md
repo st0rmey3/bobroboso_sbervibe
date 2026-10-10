@@ -7,7 +7,8 @@
 Файлы для локального сервиса в репозитории:
 - `docker-compose.yml` — сервис `ollama` (профиль `local-llm`);
 - `Makefile` — цель `up-local-llm` (поднимает Ollama и скачивает модель);
-- `backend/app/llm/ollama.py` — локальный провайдер (структурированный JSON-ответ по схеме).
+- `backend/app/llm/ollama.py` — локальный провайдер (структурированный JSON-ответ по схеме);
+- `backend/app/llm/ocr.py` — OCR-шаг: локальный (`OCR_PROVIDER=ollama`) или olmOCR (`OCR_PROVIDER=olmocr`).
 
 ## 1. Что нужно
 | | Рекомендуется | Минимум |
@@ -45,6 +46,18 @@ make up-local-llm          # = docker compose --profile local-llm up -d + ollama
 ```
 В `.env`: `LLM_PROVIDER=ollama`, `OLLAMA_URL=http://ollama:11434`, `OCR_PROVIDER=none`, затем
 `docker compose up -d backend worker`. Для GPU в Docker нужен NVIDIA Container Toolkit.
+
+## 3a. Локальный OCR (по желанию)
+Можно разделить работу на два шага, как с olmOCR: локальная модель сначала распознаёт текст страницы,
+затем из текста извлекаются поля. В `.env`:
+```
+LLM_PROVIDER=ollama
+OCR_PROVIDER=ollama
+OLLAMA_OCR_MODEL=            # пусто = та же OLLAMA_MODEL
+```
+`docker compose up -d backend worker`. Документ проходит дополнительную стадию «Распознавание текста», а в карточке
+оператора под файлом появляется блок «Что прочитала модель» — распознанный текст.
+Проверить отдельно: `docker compose exec worker python scripts/check_ocr.py <файл>` (для `OCR_PROVIDER=olmocr`).
 
 ## 4. Как проверить, что работает
 1. `curl http://localhost:8000/api/health` → `"llm_provider": "ollama"`.

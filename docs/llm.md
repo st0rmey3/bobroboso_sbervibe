@@ -10,6 +10,9 @@
 | `gigachat` | `llm/gigachat.py` | основная облачная (Сбер), изображения через загрузку файлов |
 | `openai` | `llm/openai_compat.py` | любой OpenAI-совместимый API (OpenAI, DeepSeek, OpenRouter, vLLM, LM Studio) |
 
+Отдельный OCR-шаг (`OCR_PROVIDER`, файл `llm/ocr.py`): `olmocr` — olmOCR-2 Сбера, `ollama` — локальная модель,
+`none` — модель сама читает изображение.
+
 Переключение — только переменной окружения в `.env` и `docker compose up -d backend worker`.
 
 ## Локальный запуск

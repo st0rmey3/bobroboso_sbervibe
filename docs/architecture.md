@@ -14,6 +14,7 @@ flowchart LR
   W --> V
   W -->|get_ocr / get_provider| L{{Слой модели<br/>backend/app/llm}}
   L -->|OCR_PROVIDER=olmocr| OC[olmOCR-2<br/>vLLM Сбера]
+  L -->|OCR_PROVIDER=ollama| OL
   L -->|LLM_PROVIDER=openai| OA[Qwen3.8-27B<br/>OpenAI-совместимый API Сбера]
   L -->|LLM_PROVIDER=ollama| OL[Ollama<br/>локально]
   L -->|LLM_PROVIDER=gigachat| GC[GigaChat API]
