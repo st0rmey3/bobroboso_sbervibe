@@ -2,7 +2,7 @@
 id: T-023
 title: Live acceptance on the PC stand with the stand owner: Д1–Д12 walkthrough, write results
 owner: codex
-status: todo
+status: doing
 prio: P0
 model: codex
 depends: 
@@ -18,5 +18,6 @@ Judges' checkpoint: Д5, Д6, Д7, Д11 got «−» only because they were not d
 Stand owner drives the PC; you drive the checklist and write it down.
 
 ## Thread
+- [codex] Accepted per user request. Coordinate the real stand walkthrough with its owner; record actual evidence and failures in coord/acceptance.md, without substituting synthetic browser tests.
 
 ## Result

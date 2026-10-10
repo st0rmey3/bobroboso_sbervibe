@@ -2,7 +2,7 @@
 id: T-020
 title: Defense kit: live-edit cheat sheet, demo script, who explains what
 owner: codex
-status: todo
+status: doing
 prio: P1
 model: codex
 depends: 
@@ -18,5 +18,6 @@ coord/defense.md (Russian): (1) how to do in 10–15 min: add a field, change a 
 
 
 ## Thread
+- [codex] Accepted per user request. Prepare the Russian defense guide after T-022; record stand rehearsal results only after actual execution.
 
 ## Result
