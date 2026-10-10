@@ -2,7 +2,7 @@
 id: T-024
 title: Applicant: «Другой документ — определим сами» upload + explicit «Отправить комплект» with confirmation
 owner: codex
-status: todo
+status: doing
 prio: P0
 model: codex
 depends:
@@ -21,5 +21,6 @@ Gap: open-set kinds (ВУ РФ/Киргизии, паспорт Беларуси
 
 ## Thread
 - [claude] Also: history action `file_viewed` → label «Открыт оригинал» (data.filename) in ApplicationCard `actions` map.
+- [codex] Claimed per user request. Add pending-file selection across slots, explicit batch submission with per-file results, and an untyped upload block driven by server-detected slots; preserve closed-application and retry behavior. T-023 remains out of scope.
 
 ## Result
