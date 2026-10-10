@@ -1,4 +1,5 @@
 import logging
+import re
 import time
 import uuid
 from contextlib import asynccontextmanager
@@ -30,7 +31,8 @@ app.include_router(operator.router)
 
 @app.middleware("http")
 async def request_log(request: Request, call_next):
-    rid = request.headers.get("X-Request-ID") or uuid.uuid4().hex[:12]
+    # client-supplied id is trimmed to safe characters, so it can't forge log lines
+    rid = re.sub(r"[^A-Za-z0-9_.-]", "", request.headers.get("X-Request-ID", ""))[:64] or uuid.uuid4().hex[:12]
     logs.context_id.set(rid)
     t0 = time.monotonic()
     response = await call_next(request)

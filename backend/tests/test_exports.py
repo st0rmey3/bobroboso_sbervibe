@@ -18,7 +18,9 @@ def app_with(valid_until):
         status=DocumentStatus.done,
         fields=fields,
     )
-    return SimpleNamespace(id="a", full_name="Иван Иванов", doc_set=["work_patent"], documents=[d])
+    return SimpleNamespace(
+        id="a", full_name="Иван Иванов", country="UZ", phone=None, doc_set=["work_patent"], documents=[d]
+    )
 
 
 def test_expiring_selection():
@@ -38,3 +40,10 @@ def test_csv_has_bom_and_cyrillic():
 def test_card_csv_marks_source():
     text = card_csv(app_with("2027-01-01")).decode("utf-8-sig")
     assert "оператор" in text and "модель" in text
+
+
+def test_csv_neutralizes_formulas():
+    from app.exports import to_csv
+
+    out = to_csv(["a"], [['=HYPERLINK("x")'], ["-1"], ["Иванов"]]).decode("utf-8-sig")
+    assert "'=HYPERLINK" in out and "'-1" in out and "\nИванов" in out

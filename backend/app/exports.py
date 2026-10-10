@@ -35,11 +35,17 @@ def expiring_rows(applications, days: int, today: date | None = None) -> list[di
     return sorted(rows, key=lambda r: r["days_left"])
 
 
+def _cell(value) -> str:
+    """Values come from documents: neutralize Excel formulas (CSV injection: =, +, -, @)."""
+    text = str(value)
+    return "'" + text if text[:1] in ("=", "+", "-", "@") else text
+
+
 def to_csv(header: list[str], rows: list[list]) -> bytes:
     buf = io.StringIO()
     writer = csv.writer(buf, delimiter=";")
     writer.writerow(header)
-    writer.writerows(rows)
+    writer.writerows([[_cell(v) for v in row] for row in rows])
     return buf.getvalue().encode("utf-8-sig")  # BOM: Excel then opens Cyrillic correctly
 
 
@@ -52,8 +58,12 @@ def expiring_csv(rows: list[dict]) -> bytes:
 
 
 def card_csv(app) -> bytes:
-    """One row per field of every document slot (merged across files)."""
-    rows = []
+    """Applicant header rows, then one row per field of every document slot (merged across files)."""
+    rows = [
+        ["Соискатель", "ФИО", app.full_name, "соискатель", "", ""],
+        ["Соискатель", "Страна", app.country, "соискатель", "", ""],
+        ["Соискатель", "Телефон", app.phone or "", "соискатель", "", ""],
+    ]
     for slot in doc_slots(app):
         for spec in DOC_TYPES[slot["doc_type"]].fields:
             f = slot["fields"][spec.name]
