@@ -3,7 +3,7 @@
 from sqlalchemy.orm import Session
 
 from app.crosscheck import cross_checks
-from app.extraction.doctypes import DOC_TYPES, missing_required
+from app.extraction.doctypes import DOC_TYPES, UNKNOWN, missing_required
 from app.models import Application, ApplicationStatus, AuditEvent, DocumentStatus
 
 _USABLE = {DocumentStatus.done, DocumentStatus.needs_review}
@@ -71,6 +71,20 @@ def doc_slots(app: Application) -> list[dict]:
                 "fields": merged,
                 "missing_fields": missing,
                 "warnings": warnings,
+            }
+        )
+    unassigned = [d for d in app.documents if _type_of(d) not in DOC_TYPES]
+    if unassigned:  # e.g. a receipt uploaded without a declared type: keep it visible to applicant and operator
+        slots.append(
+            {
+                "doc_type": UNKNOWN,
+                "label": "Нераспознанные файлы",
+                "required": False,
+                "state": "processing" if any(d.status in _IN_PROGRESS for d in unassigned) else "problem",
+                "document_ids": [d.id for d in unassigned],
+                "fields": {},
+                "missing_fields": [],
+                "warnings": [],
             }
         )
     return slots

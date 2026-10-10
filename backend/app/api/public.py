@@ -118,7 +118,7 @@ def get_application(
 def upload_document(
     app_id: str,
     file: UploadFile = File(...),
-    declared_type: str = Form(...),
+    declared_type: str | None = Form(None),  # None = "не знаю, какой это документ": type comes from the content
     x_application_token: str | None = Header(None),
     session: Session = Depends(get_session),
 ) -> DocumentPublic:
@@ -126,7 +126,7 @@ def upload_document(
     name = (file.filename or "file")[:255]
     if app.status in (ApplicationStatus.accepted, ApplicationStatus.rejected):
         raise _reject(session, app, 409, "Заявка уже рассмотрена, загрузка закрыта", filename=name)
-    if declared_type not in DOC_TYPES:
+    if declared_type is not None and declared_type not in DOC_TYPES:
         raise _reject(session, app, 422, "Неизвестный вид документа", filename=name)
     if len(app.documents) >= settings.max_files_per_application:
         raise _reject(session, app, 413, f"В заявке уже {settings.max_files_per_application} файлов — это максимум")

@@ -403,7 +403,7 @@ export interface components {
             /** File */
             file: string;
             /** Declared Type */
-            declared_type: string;
+            declared_type?: string | null;
         };
         /** CountryOut */
         CountryOut: {

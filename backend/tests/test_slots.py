@@ -45,3 +45,10 @@ def test_same_document_uploaded_twice_is_flagged():
     [slot] = doc_slots(SimpleNamespace(doc_set=["work_patent"], documents=[a, b]))
     assert slot["warnings"] and "один и тот же документ" in slot["warnings"][0]
     assert slot["state"] == "problem"
+
+
+def test_unrecognized_file_without_declared_type_stays_visible():
+    receipt = doc("r", {}, status=DocumentStatus.unreadable)
+    receipt.detected_type, receipt.declared_type = "unknown", None
+    slots = doc_slots(SimpleNamespace(doc_set=["inn"], documents=[receipt]))
+    assert slots[-1]["doc_type"] == "unknown" and slots[-1]["document_ids"] == ["r"]

@@ -47,3 +47,12 @@ def test_csv_neutralizes_formulas():
 
     out = to_csv(["a"], [['=HYPERLINK("x")'], ["-1"], ["Иванов"]]).decode("utf-8-sig")
     assert "'=HYPERLINK" in out and "'-1" in out and "\nИванов" in out
+
+
+def test_exports_skip_unrecognized_files_slot():
+    app = app_with("2027-01-01")
+    junk = SimpleNamespace(id="j", filename="чек.jpg", detected_type="unknown", declared_type=None, fields={})
+    junk.status = DocumentStatus.unreadable
+    app.documents.append(junk)
+    assert card_csv(app)
+    assert expiring_rows([app], 30, date(2026, 10, 10)) == []

@@ -14,7 +14,8 @@ def expiring_rows(applications, days: int, today: date | None = None) -> list[di
     rows = []
     for app in applications:
         for slot in doc_slots(app):
-            for spec in DOC_TYPES[slot["doc_type"]].fields:
+            dt = DOC_TYPES.get(slot["doc_type"])  # "unknown" slot (unrecognized files) has no fields
+            for spec in dt.fields if dt else []:
                 if "not_expired" not in spec.rules:
                     continue
                 value = slot["fields"][spec.name].get("value")
@@ -65,7 +66,8 @@ def card_csv(app) -> bytes:
         ["Соискатель", "Телефон", app.phone or "", "соискатель", "", ""],
     ]
     for slot in doc_slots(app):
-        for spec in DOC_TYPES[slot["doc_type"]].fields:
+        dt = DOC_TYPES.get(slot["doc_type"])  # "unknown" slot (unrecognized files) has no fields
+        for spec in dt.fields if dt else []:
             f = slot["fields"][spec.name]
             rows.append(
                 [
