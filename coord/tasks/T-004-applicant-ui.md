@@ -4,6 +4,7 @@ title: Applicant UI: country, doc checklist, multi-file upload, live status, re-
 owner: codex
 status: todo
 prio: P0
+model: codex
 depends:
 ---
 ## Goal

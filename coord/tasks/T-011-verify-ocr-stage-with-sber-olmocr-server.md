@@ -3,7 +3,8 @@ id: T-011
 title: Verify OCR stage with Sber olmOCR server
 owner: claude
 status: todo
-prio: P0
+prio: P1
+model: sonnet
 depends:
 ---
 ## Goal

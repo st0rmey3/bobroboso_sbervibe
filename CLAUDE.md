@@ -12,12 +12,20 @@ The human captain has the final word; teammates' agents are Codex/GPT and Gemini
 - **Task quality:** small (≤1–2 h), names exact files, has verifiable `## Acceptance`, so the other agent needn't explore.
 - **Routing by strength:**
   - Codex/GPT → frontend, well-specified endpoints, tests.
-  - Gemini (backend dev) → backend features, extraction pipeline, eval on the open set.
+  - Stand owner (`gemini`, reads tasks himself, Gemini is limited) → stand, local model, labels.
+    His tasks: in Russian, numbered steps, exact commands, `model: human`.
   - Claude → integration, queue/worker, auth, LLM layer, infra, docs, review, cross-cutting fixes.
   - DeepSeek fallback → only small, fully specified tasks.
 - **Review** of `status: review` tasks: read the diff (`git show <sha> --stat` first, then only the relevant hunks),
   check Hard rules, verify the Acceptance command; then `done` or a Thread note.
 - Keep `docs/decisions.md` and `docs/architecture.md` current — they are graded (Д10).
+
+## Model routing (save Opus limits)
+- Task frontmatter `model:` says who should run it: `opus` (design, debugging unknown failures, reviews, cross-cutting),
+  `sonnet` (fully specified endpoints, docs, config changes, tests), `human`, `codex`.
+- Running a `sonnet` task under Opus is waste: tell the captain to `/model sonnet` first.
+- Under Sonnet: follow the task literally; if blocked after 2 attempts — stop, write the blocker in the Thread,
+  and suggest switching to Opus.
 
 ## Subagents
 - Default: work inline. Subagents start cold and re-read context — expensive.

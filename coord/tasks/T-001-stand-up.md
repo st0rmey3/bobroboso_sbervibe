@@ -1,30 +1,45 @@
 ---
 id: T-001
-title: Stand up the whole stack on the demo PC (Docker)
+title: Поднять весь стенд на своём ПК (Docker) — шаг 1 из 3
 owner: gemini
 status: todo
 prio: P0
+model: human
 depends:
 ---
-## Goal
-The RTX 5060 PC is the demo stand (Д1). Bring it up exactly by README, by hand — so we know the README works.
+## Цель
+Твой ПК — стенд для защиты (критерий Д1: «стенд поднимается по инструкции»). Нужно поднять всё строго по README,
+руками — так мы узнаем, что инструкция рабочая. Займёт ~30–40 минут.
 
-1. `git clone https://github.com/st0rmey3/bobroboso_sbervibe.git && cd bobroboso_sbervibe`
-2. `cp .env.example .env`, put the values the captain sends privately (LLM key etc.). Never commit `.env`.
-3. `docker compose up -d --build`  (or `make up`), then `docker compose ps` — all services Up.
-4. Open http://localhost:3000 (applicant) and http://localhost:3000/operator → Keycloak login page →
-   `operator` / OPERATOR_PASSWORD from `.env` → back in the operator UI. If the password doesn't work, check the realm
-   import placeholder `${OPERATOR_PASSWORD}` in `keycloak/realm-docs.json` (write the result in Thread — important).
-5. Upload 2–3 files from the organizers' test set (captain shares the folder) and watch statuses change.
-6. Restart test: while a document is processing run `docker compose restart worker` — it must still finish.
+## Шаги
+1. Склонировать репозиторий:
+   `git clone https://github.com/st0rmey3/bobroboso_sbervibe.git` и `cd bobroboso_sbervibe`
+2. Настроить git на своё имя (коммиты должны быть от тебя):
+   `git config user.name "Имя Фамилия"` и `git config user.email "твоя@почта"`
+3. Скопировать настройки: `cp .env.example .env` (в Windows: `copy .env.example .env`).
+   Открыть `.env` и вставить значения, которые капитан пришлёт в личку (ключ LLM, пароли).
+   **`.env` никогда не коммитить** — там ключи.
+4. Запустить: `docker compose up -d --build`. Первый раз 5–10 минут.
+5. Проверить, что всё поднялось: `docker compose ps` — все сервисы `running`/`Up`.
+6. Открыть в браузере:
+   - http://localhost:3000 — страница соискателя (пока каркас — это нормально, её делает Codex);
+   - http://localhost:3000/operator → должна открыться страница входа Keycloak →
+     логин `operator`, пароль = `OPERATOR_PASSWORD` из `.env` → вернуться в рабочее место оператора;
+   - http://localhost:8000/docs — API, там можно руками загрузить файл (POST /api/public/applications,
+     потом POST …/documents) и посмотреть статус.
+7. Загрузить 2–3 файла из папки `case_docs` (капитан пришлёт) и посмотреть, что статус меняется до «done».
+8. Проверка перезапуска: пока документ разбирается, выполнить `docker compose restart worker`.
+   Документ всё равно должен дойти до конца.
 
-## Acceptance
-- [ ] every README step worked as written (or the Thread says which one didn't and the exact error)
-- [ ] a document went to «Готово»/«Требует проверки» through the real model
-- [ ] restart of worker/backend loses nothing
+## Если что-то сломалось
+Записать в раздел «Thread» ниже одну строку на проблему: какая команда → какая ошибка.
+Логи сервиса: `docker compose logs --tail 30 backend` (или `worker`, `keycloak`, `frontend`).
+Особенно важно: работает ли пароль оператора в Keycloak (шаг 6). Капитан чинит, ты делаешь `git pull` и повторяешь.
 
-## Notes
-Report problems as one line each in Thread: command → error (last 10 lines of `docker compose logs <service>`).
+## Готово, когда
+- [ ] все шаги README прошли как написано (или в Thread записано, какой не прошёл)
+- [ ] вход оператора через Keycloak работает
+- [ ] документ дошёл до «done» через настоящую модель, перезапуск ничего не потерял
 
 ## Thread
 

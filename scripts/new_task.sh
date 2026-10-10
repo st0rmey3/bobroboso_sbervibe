@@ -14,6 +14,7 @@ title: $title
 owner: $owner
 status: todo
 prio: $prio
+model: -
 depends:
 ---
 ## Goal

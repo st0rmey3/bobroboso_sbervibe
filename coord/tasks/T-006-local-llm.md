@@ -1,31 +1,43 @@
 ---
 id: T-006
-title: Local model on the RTX 5060: run, measure, write docs/local-model.md
+title: Локальная модель на RTX 5060 — запустить, замерить, написать инструкцию — шаг 2 из 3
 owner: gemini
 status: todo
 prio: P0
+model: human
 depends: T-001
 ---
-## Goal
-Case 5.3 + С19–С20 (15 pts): a working local provider, a step-by-step instruction a stranger can follow, numbers.
+## Цель
+Раздел 5.3 ТЗ + 15 баллов: должен работать **локальный** вариант модели, и нужна пошаговая инструкция,
+по которой чужой человек поднимет его сам. На защите покажем переключение: меняем настройку → работает локально.
 
-1. Install Ollama natively (GPU). `ollama pull qwen2.5vl:7b` (fits 8 GB). If available also try `qwen3-vl:8b`.
-2. In `.env`: `LLM_PROVIDER=ollama`, `OLLAMA_MODEL=qwen2.5vl:7b`, `OCR_PROVIDER=none`,
-   `OLLAMA_URL=http://host.docker.internal:11434`; `docker compose up -d backend worker`.
-3. Upload the same 6 files (passport RF, SNILS, INN, patent front+back, blurry photo) via the applicant UI.
-   Write down per file: time to «Готово», which fields are right/wrong. Then the same with `LLM_PROVIDER=openai`.
-4. Write `docs/local-model.md` in Russian, step by step: requirements (GPU/VRAM/RAM/disk), install Ollama, pull model,
-   `.env` switch, restart, how to check it works, table with your numbers (time, quality) local vs cloud,
-   what changes: hardware, speed, quality, cost, privacy (case 5.3 last bullet).
-5. Commit it yourself (`docs: local model guide`) — your own commits are required by the case.
+## Шаги
+1. Установить Ollama (https://ollama.com/download) — нативно, чтобы работала видеокарта.
+2. Скачать модель, которая умеет читать картинки и влезает в 8 ГБ: `ollama pull qwen2.5vl:7b`
+   (если есть время — сравнить с `qwen2.5vl:3b`).
+3. Проверить, что модель отвечает: `ollama run qwen2.5vl:7b "привет"`.
+4. В `.env` поменять:
+   `LLM_PROVIDER=ollama`, `OLLAMA_MODEL=qwen2.5vl:7b`, `OCR_PROVIDER=none`,
+   `OLLAMA_URL=http://host.docker.internal:11434`
+   и перезапустить: `docker compose up -d backend worker`.
+5. Загрузить те же 6 файлов: паспорт РФ, СНИЛС, ИНН, патент (лицо + оборот), размытое фото.
+   Для каждого записать: сколько секунд до «done», какие поля верные/неверные (сверять глазами с картинкой).
+6. Вернуть `LLM_PROVIDER=openai`, повторить те же 6 файлов — записать то же для облачной модели.
+7. Написать файл `docs/local-model.md` (по-русски, пошагово):
+   - что нужно: видеокарта/память/диск, ОС;
+   - установка Ollama, скачивание модели, команды;
+   - что поменять в `.env`, как перезапустить, как проверить, что работает;
+   - таблица замеров: время и качество, локально и в облаке;
+   - что меняется при переходе на локальную: железо, скорость, качество, стоимость, приватность.
+8. Закоммитить сам: `git add docs/local-model.md`, `git commit -m "docs: инструкция по локальной модели"`,
+   `git pull --rebase`, `git push`.
 
-## Acceptance
-- [ ] switching provider is only an `.env` change + restart, shown live
-- [ ] docs/local-model.md reproducible on a clean machine
-- [ ] numbers table filled with real measurements
+## Если модель не влезает или очень медленная
+Взять `qwen2.5vl:3b` и написать это в инструкции. Ошибки — в Thread.
 
-## Notes
-Model too slow / out of memory → try `qwen2.5vl:3b`, note it in the doc. If Gemini doesn't work — DeepSeek or by hand.
+## Готово, когда
+- [ ] переключение провайдера = только `.env` + перезапуск, проверено
+- [ ] `docs/local-model.md` в репозитории, с реальными цифрами
 
 ## Thread
 

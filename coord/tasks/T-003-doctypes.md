@@ -1,9 +1,10 @@
 ---
 id: T-003
-title: Implement all 8 document types (registry + prompts + validation)
+title: Tune prompts on the open set using T-008 labels (eval numbers)
 owner: claude
 status: todo
 prio: P1
+model: sonnet
 depends: T-002
 ---
 ## Goal

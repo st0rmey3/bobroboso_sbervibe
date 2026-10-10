@@ -4,6 +4,7 @@ title: Docs pack 5.5: run guide, scheme, decisions, local model, limits, AI repo
 owner: claude
 status: todo
 prio: P1
+model: sonnet
 depends:
 ---
 ## Goal

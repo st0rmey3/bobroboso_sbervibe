@@ -1,9 +1,10 @@
 ---
 id: T-012
-title: Operator login via OIDC + Keycloak (mandatory) — verify end-to-end
+title: Keycloak + Docker stand: fix everything T-001 reports, verify OIDC end-to-end
 owner: claude
 status: review
 prio: P0
+model: opus
 depends:
 ---
 ## Goal

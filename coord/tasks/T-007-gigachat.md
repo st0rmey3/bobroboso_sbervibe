@@ -3,7 +3,8 @@ id: T-007
 title: Verify GigaChat provider with real keys
 owner: claude
 status: todo
-prio: P1
+prio: P2
+model: sonnet
 depends: 
 ---
 ## Goal

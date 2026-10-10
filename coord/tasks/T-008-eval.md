@@ -1,20 +1,36 @@
 ---
 id: T-008
-title: Ground-truth labels for the open set (by hand) for accuracy measurement
+title: Эталонные ответы для тестовых файлов (руками) — шаг 3 из 3
 owner: gemini
 status: todo
 prio: P1
+model: human
 depends:
 ---
-## Goal
-To prove quality honestly (30 pts block) we need expected values for the organizers' files. By hand, no AI needed.
-For each file in the test set create `data/open/<same name>.json` (data/ is git-ignored) and copy the file next to it:
-`{"doc_type": "passport_ru", "fields": {"series": "8021", "number": "183703", "full_name": "АЛЕКСЕЕВА АНАСТАСИЯ ИГОРЕВНА", "birth_date": "2001-07-09"}}`
-Field names and doc_type codes: `backend/app/extraction/doctypes.py`. Dates as YYYY-MM-DD, digits without spaces.
-Non-documents: `{"doc_type": "unknown", "fields": {}}`. Then send the folder to the captain (not via git).
+## Цель
+Блок «качество разбора» — 30 баллов. Чтобы честно посчитать точность, нужны правильные ответы для каждого
+тестового файла. Делается руками, ИИ не нужен: смотришь на картинку — переписываешь значения.
 
-## Acceptance
-- [ ] every test file has a label; captain runs `python scripts/eval_extraction.py data/open`
+## Шаги
+1. Создать папку `data/open/` в корне проекта (она в `.gitignore`, в git не попадёт — так и надо).
+2. Скопировать туда все файлы из `case_docs`.
+3. Для каждого файла создать рядом JSON с тем же именем, например
+   `Паспорт РФ Киселев Максим Васильевич.json`:
+   ```
+   {"doc_type": "passport_ru",
+    "fields": {"series": "3625", "number": "921601", "full_name": "КИСЕЛЕВ МАКСИМ ВАСИЛЬЕВИЧ",
+               "birth_date": "1980-07-19"}}
+   ```
+   Правила: даты `ГГГГ-ММ-ДД`; цифры без пробелов; ФИО как на документе.
+   Коды видов и названия полей — в `backend/app/extraction/doctypes.py` (passport_ru, snils, inn, work_patent,
+   driver_license_ru, driver_license_kg, passport_by, passport_in).
+   Для чека и размытого фото: `{"doc_type": "unknown", "fields": {}}`.
+4. Заполнять хотя бы обязательные поля (минимум из ТЗ). Остальные — по желанию.
+5. Отправить папку `data/open` капитану архивом в личку (не через git).
+
+## Готово, когда
+- [ ] у каждого тестового файла есть JSON с ответами
+- [ ] капитан прогнал `python scripts/eval_extraction.py data/open` и получил цифры точности
 
 ## Thread
 

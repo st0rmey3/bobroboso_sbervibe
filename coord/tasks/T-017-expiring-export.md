@@ -1,0 +1,24 @@
+---
+id: T-017
+title: Bonus: expiring documents list + CSV export for the operator
+owner: claude
+status: todo
+prio: P1
+model: sonnet
+depends: 
+---
+## Goal
+GET /api/operator/expiring?days=30 → documents whose expiry fields (rules contain not_expired) are past or within N days: applicant, doc type, field, date, days left. GET /api/operator/expiring.csv — same as CSV (UTF-8 with BOM, `;` separator so Excel opens it). Uses merged slot fields (applications.doc_slots).
+
+## Acceptance
+- [ ] both endpoints behind require_operator
+- [ ] CSV opens in Excel with Cyrillic
+- [ ] test for the selection logic
+- [ ] `make openapi`; task for Codex to add a button (T-005 Thread)
+
+## Notes
+
+
+## Thread
+
+## Result

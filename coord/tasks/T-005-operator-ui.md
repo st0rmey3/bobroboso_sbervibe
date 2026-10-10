@@ -4,6 +4,7 @@ title: Operator workplace: list+filters, card with original next to fields, edit
 owner: codex
 status: todo
 prio: P0
+model: codex
 depends:
 ---
 ## Goal

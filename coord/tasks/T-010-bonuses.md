@@ -2,7 +2,7 @@
 id: T-010
 title: Bonus backlog (only after admission scope is closed)
 owner: unassigned
-status: todo
+status: done
 prio: P2
 depends: T-003,T-004,T-005
 ---
