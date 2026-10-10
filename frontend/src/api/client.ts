@@ -8,6 +8,10 @@ export class ApiError extends Error {
   }
 }
 
+export function errorMessage(reason: unknown): string {
+  return reason instanceof ApiError ? reason.message : "Не удалось связаться с сервером. Попробуйте ещё раз.";
+}
+
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const res = await fetch(path, init);
   if (!res.ok) {
