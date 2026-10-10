@@ -140,6 +140,13 @@ test.beforeEach(async ({ page }) => {
 
 test("uncatalogued fields keep server labels and card CSV preserves Cyrillic filename and bytes", async ({ page }) => {
   const app = await serveCard(page);
+  app.history.push({
+    actor: "operator:test-operator",
+    action: "file_viewed",
+    document_id: "export-document",
+    created_at: "2026-10-10T08:02:00Z",
+    data: { filename: "synthetic.png" },
+  });
   await page.route(`**/api/operator/applications/${app.id}/export.csv`, async (route) => {
     assertAuthenticated(route);
     app.history.push({
@@ -161,6 +168,8 @@ test("uncatalogued fields keep server labels and card CSV preserves Cyrillic fil
   await expect(page.getByLabel("Номер", { exact: true })).toHaveValue("TEST123");
   await expect(page.getByLabel("ФИО", { exact: true })).toHaveValue(app.full_name);
   await expect(page.getByText("Номер: TEST12 → TEST123")).toBeVisible();
+  await expect(page.locator(".history").getByText("Открыт оригинал", { exact: true })).toBeVisible();
+  await expect(page.locator(".history").getByText("synthetic.png", { exact: true })).toBeVisible();
   await expect(page.getByText("Поле документа", { exact: false })).toHaveCount(0);
   const pendingDownload = page.waitForEvent("download");
   await page.getByRole("button", { name: "Выгрузить карточку (CSV)", exact: true }).click();

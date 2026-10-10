@@ -128,6 +128,8 @@ test("create, upload multiple pages, poll, restore and display duplicate refusal
     buffer: Buffer.from("%PDF-1.4 synthetic test only"),
   });
   await page.getByLabel("Добавить файлы: Паспорт РФ").setInputFiles([file("page-1.pdf"), file("page-2.pdf")]);
+  expect(uploads).toBe(0);
+  await page.getByRole("button", { name: "Отправить комплект", exact: true }).click();
   await expect(page.getByText("Принято файлов: 2.", { exact: false })).toBeVisible();
   await expect(page.locator(".file-list .badge-done")).toHaveCount(2, { timeout: 12000 });
   await page.reload();
@@ -135,7 +137,8 @@ test("create, upload multiple pages, poll, restore and display duplicate refusal
   await expect(page.locator(".file-list .badge-done")).toHaveCount(2);
   duplicate = true;
   await page.getByLabel("Добавить файлы: Паспорт РФ").setInputFiles(file("page-1.pdf"));
-  await expect(page.getByRole("alert")).toContainText("Этот файл уже загружен в заявку");
+  await page.getByRole("button", { name: "Отправить комплект", exact: true }).click();
+  await expect(page.getByText("Этот файл уже загружен в заявку", { exact: true })).toBeVisible();
 });
 
 test("missing application token offers recovery and request errors are readable", async ({ page }) => {

@@ -387,6 +387,7 @@ const actions: Record<string, string> = {
   processing_started: "Разбор начат",
   processing_finished: "Разбор завершён",
   card_exported: "Карточка выгружена в CSV",
+  file_viewed: "Открыт оригинал",
 };
 function actionLabel(action: string) {
   return actions[action] ?? "Обновление заявки";

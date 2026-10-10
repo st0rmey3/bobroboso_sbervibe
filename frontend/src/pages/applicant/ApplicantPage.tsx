@@ -1,4 +1,4 @@
-import { useCallback, useState, type FormEvent } from "react";
+import { useCallback, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { applicantToken, errorMessage, publicApi } from "../../api/client";
 import type { ApplicationCreated, ApplicationPublic, Country } from "../../api/types";
@@ -124,14 +124,78 @@ function CreateApplication({ countries, onCreate }: { countries: Country[]; onCr
   );
 }
 
+type SelectedUpload = {
+  id: string;
+  file: File;
+  declaredType?: string;
+  state: "selected" | "uploading" | "failed";
+  error?: string;
+};
+
 function Application({ id, countries }: { id: string; countries: Country[] }) {
   const load = useCallback(
     (signal: AbortSignal) => publicApi<ApplicationPublic>(`/applications/${id}`, id, { signal }),
     [id],
   );
   const resource = useResource(load, 2000, needsPolling);
-  const [accepted, setAccepted] = useState(0);
+  const [uploads, setUploads] = useState<SelectedUpload[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+  const sending = useRef(false);
+  const [receipt, setReceipt] = useState<{ accepted: number; failed: number }>();
   const app = resource.data;
+  const closed = app?.status === "accepted" || app?.status === "rejected";
+
+  function selectFiles(files: File[], declaredType?: string) {
+    if (closed || sending.current) return;
+    setReceipt(undefined);
+    setUploads((current) => [
+      ...current,
+      ...files.map((file): SelectedUpload => ({ id: crypto.randomUUID(), file, declaredType, state: "selected" })),
+    ]);
+  }
+
+  function removeFile(fileId: string) {
+    if (sending.current) return;
+    setUploads((current) => current.filter((item) => item.id !== fileId));
+    setReceipt(undefined);
+  }
+
+  async function submitFiles() {
+    if (closed || sending.current || !uploads.length) return;
+    sending.current = true;
+    setSubmitting(true);
+    setReceipt(undefined);
+    const batch = uploads;
+    setUploads((current) => current.map((item) => ({ ...item, state: "uploading", error: undefined })));
+    try {
+      const results = await Promise.all(
+        batch.map(async (item) => {
+          const body = new FormData();
+          body.set("file", item.file);
+          if (item.declaredType) body.set("declared_type", item.declaredType);
+          try {
+            await publicApi(`/applications/${id}/documents`, id, { method: "POST", body });
+            setUploads((current) => current.filter((upload) => upload.id !== item.id));
+            return true;
+          } catch (reason) {
+            setUploads((current) =>
+              current.map((upload) =>
+                upload.id === item.id ? { ...upload, state: "failed", error: errorMessage(reason) } : upload,
+              ),
+            );
+            return false;
+          }
+        }),
+      );
+      const accepted = results.filter(Boolean).length;
+      setReceipt({ accepted, failed: results.length - accepted });
+      resource.reload();
+    } finally {
+      sending.current = false;
+      setSubmitting(false);
+    }
+  }
+
   if (!app)
     return resource.error ? (
       <div className="notice error" role="alert">
@@ -140,7 +204,6 @@ function Application({ id, countries }: { id: string; countries: Country[] }) {
     ) : (
       <p role="status">Открываем заявку…</p>
     );
-  const closed = app.status === "accepted" || app.status === "rejected";
   const labels = Object.fromEntries(app.slots.map((slot) => [slot.doc_type, slot.label]));
   const ready = app.slots.filter((slot) => slot.state === "ok").length;
   return (
@@ -163,9 +226,25 @@ function Application({ id, countries }: { id: string; countries: Country[] }) {
           {resource.error} <button onClick={resource.reload}>Повторить</button>
         </div>
       )}
-      {accepted > 0 && (
-        <p className="notice success" role="status">
-          Принято файлов: {accepted}. Документы поставлены на разбор — страницу можно не обновлять.
+      {receipt && receipt.accepted > 0 && (
+        <section
+          className={`notice ${receipt.failed > 0 ? "warning" : "success"}`}
+          role="status"
+          aria-label="Подтверждение приёма"
+        >
+          <h2>{receipt.failed > 0 ? "Принята часть комплекта" : "Комплект принят"}</h2>
+          <p>
+            Номер заявки: {id.slice(0, 8)}. Принято файлов: {receipt.accepted}.
+          </p>
+          <p>Разбор идёт в фоне — можно закрыть страницу и вернуться по текущей ссылке в этом браузере.</p>
+          {receipt.failed > 0 && (
+            <p>Не принято файлов: {receipt.failed}. Причины указаны ниже; эти файлы можно отправить повторно.</p>
+          )}
+        </section>
+      )}
+      {receipt && receipt.accepted === 0 && (
+        <p className="notice error" role="alert">
+          Комплект не принят. Проверьте ошибки у файлов и попробуйте ещё раз.
         </p>
       )}
       {app.missing.length > 0 && (
@@ -182,16 +261,48 @@ function Application({ id, countries }: { id: string; countries: Country[] }) {
       {app.slots.map((slot) => (
         <UploadSlot
           key={slot.doc_type}
-          id={id}
           slot={slot}
           documents={app.documents.filter((doc) => slot.document_ids.includes(doc.id))}
-          closed={closed}
-          onUploaded={(count) => {
-            setAccepted((value) => value + count);
-            resource.reload();
-          }}
-        />
+        >
+          {slot.doc_type !== "unknown" && (
+            <FilePicker
+              label={slot.label}
+              uploads={uploads.filter((item) => item.declaredType === slot.doc_type)}
+              closed={closed}
+              busy={submitting}
+              onSelect={(files) => selectFiles(files, slot.doc_type)}
+              onRemove={removeFile}
+            />
+          )}
+        </UploadSlot>
       ))}
+      {(!closed || uploads.some((item) => !item.declaredType)) && (
+        <section className="panel document-slot">
+          <h2>Другой документ — определим сами</h2>
+          <p className="muted">
+            Если документа нет в списке или вы не знаете его вид, добавьте файлы здесь. Тип определим по содержимому.
+          </p>
+          <FilePicker
+            label="Другой документ"
+            uploads={uploads.filter((item) => !item.declaredType)}
+            closed={closed}
+            busy={submitting}
+            onSelect={(files) => selectFiles(files)}
+            onRemove={removeFile}
+          />
+        </section>
+      )}
+      {!closed && (
+        <section className="panel submit-documents" aria-label="Отправка комплекта">
+          <h2>Отправьте выбранные файлы</h2>
+          <p className="muted">
+            К отправке: {uploads.length}. Выбранные файлы ещё не отправлены. До отправки оставьте страницу открытой.
+          </p>
+          <button className="primary" disabled={submitting || uploads.length === 0} onClick={() => void submitFiles()}>
+            {submitting ? "Отправляем комплект…" : "Отправить комплект"}
+          </button>
+        </section>
+      )}
       <p className="muted">
         Заявка сохранена в этом браузере. Вы можете вернуться по текущей ссылке и добавить документы.
       </p>
@@ -200,40 +311,14 @@ function Application({ id, countries }: { id: string; countries: Country[] }) {
 }
 
 function UploadSlot({
-  id,
   slot,
   documents,
-  closed,
-  onUploaded,
+  children,
 }: {
-  id: string;
   slot: ApplicationPublic["slots"][number];
   documents: ApplicationPublic["documents"];
-  closed: boolean;
-  onUploaded: (count: number) => void;
+  children: ReactNode;
 }) {
-  const [uploads, setUploads] = useState<{ name: string; error?: string; pending: boolean }[]>([]);
-  const busy = uploads.some((upload) => upload.pending);
-  async function upload(files: File[]) {
-    setUploads(files.map((file) => ({ name: file.name, pending: true })));
-    await Promise.all(
-      files.map(async (file, index) => {
-        const body = new FormData();
-        body.set("file", file);
-        body.set("declared_type", slot.doc_type);
-        let error: string | undefined;
-        try {
-          await publicApi(`/applications/${id}/documents`, id, { method: "POST", body });
-          onUploaded(1);
-        } catch (reason) {
-          error = errorMessage(reason);
-        }
-        setUploads((current) =>
-          current.map((item, position) => (position === index ? { ...item, pending: false, error } : item)),
-        );
-      }),
-    );
-  }
   return (
     <section className="panel document-slot">
       <div className="section-heading">
@@ -259,13 +344,50 @@ function UploadSlot({
           {warning}
         </p>
       ))}
-      {uploads
-        .filter((item) => item.pending || item.error)
-        .map((item, index) => (
-          <p key={index} className={item.error ? "issue" : "muted"} role={item.error ? "alert" : "status"}>
-            {item.name}: {item.error ?? "Загружается…"}
-          </p>
-        ))}
+      {children}
+    </section>
+  );
+}
+
+function FilePicker({
+  label,
+  uploads,
+  closed,
+  busy,
+  onSelect,
+  onRemove,
+}: {
+  label: string;
+  uploads: SelectedUpload[];
+  closed: boolean;
+  busy: boolean;
+  onSelect: (files: File[]) => void;
+  onRemove: (fileId: string) => void;
+}) {
+  return (
+    <>
+      {uploads.length > 0 && (
+        <ul className="file-list" aria-label={`Выбранные файлы: ${label}`}>
+          {uploads.map((item) => (
+            <li key={item.id}>
+              <div className="file-heading">
+                <strong>{item.file.name}</strong>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => onRemove(item.id)}
+                  aria-label={`Убрать файл: ${item.file.name}`}
+                >
+                  Убрать
+                </button>
+              </div>
+              <p className={item.error ? "issue" : "muted"} role={item.error ? "alert" : "status"}>
+                {item.error ?? (item.state === "uploading" ? "Отправляется…" : "Выбран, ещё не отправлен")}
+              </p>
+            </li>
+          ))}
+        </ul>
+      )}
       {!closed && (
         <label className={`upload-button ${busy ? "disabled" : ""}`}>
           {busy ? "Загружаем файлы…" : "＋ Добавить файлы"}
@@ -274,17 +396,17 @@ function UploadSlot({
             type="file"
             multiple
             accept=".pdf,.jpg,.jpeg,.png"
-            aria-label={`Добавить файлы: ${slot.label}`}
+            aria-label={`Добавить файлы: ${label}`}
             disabled={busy}
             onChange={(event) => {
               const files = Array.from(event.target.files ?? []);
               event.target.value = "";
-              if (files.length) void upload(files);
+              if (files.length) onSelect(files);
             }}
           />
         </label>
       )}
       <p className="muted small">PDF, JPG или PNG. Для разворотов выберите несколько файлов.</p>
-    </section>
+    </>
   );
 }

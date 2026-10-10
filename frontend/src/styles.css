@@ -30,6 +30,9 @@ button,
   cursor: pointer;
   font-weight: 600;
 }
+.submit-documents > .primary {
+  width: 100%;
+}
 button:hover,
 .upload-button:hover {
   background: #edf6f0;
