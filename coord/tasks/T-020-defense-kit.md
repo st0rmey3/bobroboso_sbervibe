@@ -1,10 +1,10 @@
 ---
 id: T-020
 title: Defense kit: live-edit cheat sheet, demo script, who explains what
-owner: claude
+owner: codex
 status: todo
 prio: P1
-model: sonnet
+model: codex
 depends: 
 ---
 ## Goal

@@ -2,8 +2,8 @@
 id: T-015
 title: Bonus: cross-document consistency (name/birth date across documents, Latin vs Cyrillic)
 owner: claude
-status: todo
-prio: P1
+status: doing
+prio: P0
 model: opus
 depends: 
 ---
