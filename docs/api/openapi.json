@@ -5,13 +5,13 @@
     "version": "0.1.0"
   },
   "paths": {
-    "/api/public/doc-types": {
+    "/api/public/countries": {
       "get": {
         "tags": [
           "applicant"
         ],
-        "summary": "Doc Types",
-        "operationId": "doc_types_api_public_doc_types_get",
+        "summary": "Countries",
+        "operationId": "countries_api_public_countries_get",
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -19,10 +19,10 @@
               "application/json": {
                 "schema": {
                   "items": {
-                    "$ref": "#/components/schemas/DocTypeOut"
+                    "$ref": "#/components/schemas/CountryOut"
                   },
                   "type": "array",
-                  "title": "Response Doc Types Api Public Doc Types Get"
+                  "title": "Response Countries Api Public Countries Get"
                 }
               }
             }
@@ -251,6 +251,38 @@
               ],
               "title": "Status"
             }
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Country"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
           }
         ],
         "responses": {
@@ -477,6 +509,37 @@
         }
       }
     },
+    "/api/operator/processing": {
+      "get": {
+        "tags": [
+          "operator"
+        ],
+        "summary": "Processing",
+        "description": "In work right now: real documents waiting for or going through parsing (case 3.3).",
+        "operationId": "processing_api_operator_processing_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProcessingItem"
+                  },
+                  "type": "array",
+                  "title": "Response Processing Api Operator Processing Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
     "/api/operator/stats": {
       "get": {
         "tags": [
@@ -531,17 +594,30 @@
     "schemas": {
       "ApplicationCreate": {
         "properties": {
-          "doc_set": {
-            "items": {
-              "type": "string"
-            },
-            "type": "array",
-            "title": "Doc Set"
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          },
+          "country": {
+            "type": "string",
+            "title": "Country"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
           }
         },
         "type": "object",
         "required": [
-          "doc_set"
+          "full_name",
+          "country"
         ],
         "title": "ApplicationCreate"
       },
@@ -572,6 +648,14 @@
           "status": {
             "$ref": "#/components/schemas/ApplicationStatus"
           },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          },
+          "country": {
+            "type": "string",
+            "title": "Country"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -589,16 +673,23 @@
           "documents_done": {
             "type": "integer",
             "title": "Documents Done"
+          },
+          "documents_attention": {
+            "type": "integer",
+            "title": "Documents Attention"
           }
         },
         "type": "object",
         "required": [
           "id",
           "status",
+          "full_name",
+          "country",
           "created_at",
           "updated_at",
           "documents_total",
-          "documents_done"
+          "documents_done",
+          "documents_attention"
         ],
         "title": "ApplicationListItem"
       },
@@ -610,6 +701,25 @@
           },
           "status": {
             "$ref": "#/components/schemas/ApplicationStatus"
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "country": {
+            "type": "string",
+            "title": "Country"
           },
           "doc_set": {
             "items": {
@@ -649,6 +759,9 @@
         "required": [
           "id",
           "status",
+          "full_name",
+          "phone",
+          "country",
           "doc_set",
           "created_at",
           "documents",
@@ -665,6 +778,14 @@
           },
           "status": {
             "$ref": "#/components/schemas/ApplicationStatus"
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          },
+          "country": {
+            "type": "string",
+            "title": "Country"
           },
           "doc_set": {
             "items": {
@@ -692,6 +813,8 @@
         "required": [
           "id",
           "status",
+          "full_name",
+          "country",
           "doc_set",
           "documents",
           "missing"
@@ -760,22 +883,42 @@
             "title": "File"
           },
           "declared_type": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
+            "type": "string",
             "title": "Declared Type"
           }
         },
         "type": "object",
         "required": [
-          "file"
+          "file",
+          "declared_type"
         ],
         "title": "Body_upload_document_api_public_applications__app_id__documents_post"
+      },
+      "CountryOut": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "doc_types": {
+            "items": {
+              "$ref": "#/components/schemas/DocTypeOut"
+            },
+            "type": "array",
+            "title": "Doc Types"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "label",
+          "doc_types"
+        ],
+        "title": "CountryOut"
       },
       "DocTypeOut": {
         "properties": {
@@ -854,6 +997,17 @@
             ],
             "title": "Detected Type"
           },
+          "ocr_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ocr Text"
+          },
           "mime": {
             "type": "string",
             "title": "Mime"
@@ -900,6 +1054,7 @@
           "status_reason",
           "created_at",
           "detected_type",
+          "ocr_text",
           "mime",
           "size",
           "fields",
@@ -967,6 +1122,7 @@
         "enum": [
           "queued",
           "preprocessing",
+          "recognizing",
           "extracting",
           "validating",
           "done",
@@ -1088,6 +1244,67 @@
           "roles"
         ],
         "title": "Me"
+      },
+      "ProcessingItem": {
+        "properties": {
+          "document_id": {
+            "type": "string",
+            "title": "Document Id"
+          },
+          "application_id": {
+            "type": "string",
+            "title": "Application Id"
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          },
+          "filename": {
+            "type": "string",
+            "title": "Filename"
+          },
+          "status": {
+            "$ref": "#/components/schemas/DocumentStatus"
+          },
+          "attempts": {
+            "type": "integer",
+            "title": "Attempts"
+          },
+          "last_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Error"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "document_id",
+          "application_id",
+          "full_name",
+          "filename",
+          "status",
+          "attempts",
+          "last_error",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ProcessingItem"
       },
       "QueueStats": {
         "properties": {

@@ -2,7 +2,8 @@
 export const documentStatusLabel: Record<string, string> = {
   queued: "В очереди",
   preprocessing: "Подготовка файла",
-  extracting: "Распознавание",
+  recognizing: "Распознавание текста",
+  extracting: "Извлечение данных",
   validating: "Проверка",
   done: "Готово",
   needs_review: "Требует проверки",

@@ -19,8 +19,16 @@ class DocTypeOut(BaseModel):
     fields: list[FieldSpecOut]
 
 
+class CountryOut(BaseModel):
+    code: str
+    label: str
+    doc_types: list[DocTypeOut]  # required set for this country
+
+
 class ApplicationCreate(BaseModel):
-    doc_set: list[str]  # doc type codes the applicant will provide
+    full_name: str
+    country: str  # CountryOut.code; the server derives the document set from it
+    phone: str | None = None
 
 
 class ApplicationCreated(BaseModel):
@@ -50,6 +58,8 @@ class DocumentPublic(BaseModel):
 class ApplicationPublic(BaseModel):
     id: str
     status: ApplicationStatus
+    full_name: str
+    country: str
     doc_set: list[str]
     documents: list[DocumentPublic]
     missing: list[str]  # doc type codes from doc_set without a usable document
@@ -57,6 +67,7 @@ class ApplicationPublic(BaseModel):
 
 class DocumentOperator(DocumentPublic):
     detected_type: str | None
+    ocr_text: str | None
     mime: str
     size: int
     fields: dict[str, ExtractedField]
@@ -70,10 +81,13 @@ class ApplicationListItem(BaseModel):
 
     id: str
     status: ApplicationStatus
+    full_name: str
+    country: str
     created_at: datetime
     updated_at: datetime
     documents_total: int
     documents_done: int
+    documents_attention: int  # needs_review / unreadable / failed
 
 
 class AuditEventOut(BaseModel):
@@ -89,6 +103,9 @@ class AuditEventOut(BaseModel):
 class ApplicationOperator(BaseModel):
     id: str
     status: ApplicationStatus
+    full_name: str
+    phone: str | None
+    country: str
     doc_set: list[str]
     created_at: datetime
     documents: list[DocumentOperator]
@@ -98,6 +115,18 @@ class ApplicationOperator(BaseModel):
 
 class FieldsUpdate(BaseModel):
     fields: dict[str, str | None]  # operator corrections: field name → new value
+
+
+class ProcessingItem(BaseModel):
+    document_id: str
+    application_id: str
+    full_name: str
+    filename: str
+    status: DocumentStatus
+    attempts: int
+    last_error: str | None
+    created_at: datetime
+    updated_at: datetime
 
 
 class QueueStats(BaseModel):

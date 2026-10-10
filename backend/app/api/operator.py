@@ -18,8 +18,18 @@ from app.schemas import (
     DocumentOperator,
     FieldsUpdate,
     Me,
+    ProcessingItem,
     QueueStats,
 )
+
+IN_PROGRESS = [
+    DocumentStatus.queued,
+    DocumentStatus.preprocessing,
+    DocumentStatus.recognizing,
+    DocumentStatus.extracting,
+    DocumentStatus.validating,
+]
+ATTENTION = {DocumentStatus.needs_review, DocumentStatus.unreadable, DocumentStatus.failed}
 
 router = APIRouter(prefix="/api/operator", tags=["operator"], dependencies=[Depends(require_operator)])
 
@@ -38,19 +48,29 @@ def me(op: Operator = Depends(require_operator)) -> Me:
 
 @router.get("/applications", response_model=list[ApplicationListItem])
 def list_applications(
-    status: ApplicationStatus | None = None, session: Session = Depends(get_session)
+    status: ApplicationStatus | None = None,
+    country: str | None = None,
+    q: str | None = None,
+    session: Session = Depends(get_session),
 ) -> list[ApplicationListItem]:
     stmt = select(Application).order_by(Application.updated_at.desc())
     if status:
         stmt = stmt.where(Application.status == status)
+    if country:
+        stmt = stmt.where(Application.country == country)
+    if q:
+        stmt = stmt.where(Application.full_name.ilike(f"%{q.strip()}%"))
     return [
         ApplicationListItem(
             id=a.id,
             status=a.status,
+            full_name=a.full_name,
+            country=a.country,
             created_at=a.created_at,
             updated_at=a.updated_at,
             documents_total=len(a.documents),
             documents_done=sum(d.status == DocumentStatus.done for d in a.documents),
+            documents_attention=sum(d.status in ATTENTION for d in a.documents),
         )
         for a in session.scalars(stmt)
     ]
@@ -67,6 +87,9 @@ def get_application(app_id: str, session: Session = Depends(get_session)) -> App
     return ApplicationOperator(
         id=app.id,
         status=app.status,
+        full_name=app.full_name,
+        phone=app.phone,
+        country=app.country,
         doc_set=app.doc_set,
         created_at=app.created_at,
         documents=[DocumentOperator.model_validate(d) for d in app.documents],
@@ -113,6 +136,32 @@ def reprocess(
     refresh_status(doc.application)
     session.commit()
     return DocumentOperator.model_validate(doc)
+
+
+@router.get("/processing", response_model=list[ProcessingItem])
+def processing(session: Session = Depends(get_session)) -> list[ProcessingItem]:
+    """In work right now: real documents waiting for or going through parsing (case 3.3)."""
+    rows = session.execute(
+        select(Document, Application.full_name, Job)
+        .join(Application, Application.id == Document.application_id)
+        .join(Job, Job.document_id == Document.id)
+        .where(Document.status.in_(IN_PROGRESS), Job.status.in_([JobStatus.queued, JobStatus.running]))
+        .order_by(Document.created_at)
+    ).all()
+    return [
+        ProcessingItem(
+            document_id=d.id,
+            application_id=d.application_id,
+            full_name=name,
+            filename=d.filename,
+            status=d.status,
+            attempts=j.attempts,
+            last_error=j.last_error,
+            created_at=d.created_at,
+            updated_at=d.updated_at,
+        )
+        for d, name, j in rows
+    ]
 
 
 @router.get("/stats", response_model=QueueStats)
