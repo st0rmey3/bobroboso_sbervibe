@@ -21,12 +21,30 @@ make up                       # db, keycloak, backend, worker, frontend
 | API (Swagger) | http://localhost:8000/docs |
 | Keycloak (админка) | http://localhost:8080 |
 
-Локальная модель: см. [docs/llm.md](docs/llm.md). Сброс всех данных: `make reset`.
+## Учётные данные
+| Где | Логин | Пароль |
+|---|---|---|
+| Рабочее место оператора | `operator` | значение `OPERATOR_PASSWORD` из `.env` |
+| Keycloak (админка) | значение `KC_BOOTSTRAP_ADMIN_USERNAME` | значение `KC_BOOTSTRAP_ADMIN_PASSWORD` |
+| Кабинет соискателя | не нужны (публичная страница) | — |
+
+## Что должно получиться
+1. `make ps` — все пять сервисов (`db`, `keycloak`, `backend`, `worker`, `frontend`) в состоянии running/healthy;
+   `curl localhost:8000/api/health` → `{"status":"ok",...,"queue":{...}}`.
+2. На http://localhost:3000 выбрать страну, загрузить документы — ответ приходит сразу, статусы обновляются по ходу разбора.
+3. На http://localhost:3000/operator после входа видна заявка: поля документов, оригинал рядом, правка и перезапуск разбора.
+4. Без входа `curl localhost:8000/api/operator/stats` → `401`.
+
+Если в `.env` не задана модель, разбор идёт через `LLM_PROVIDER=ollama` — нужен запущенный Ollama
+(см. [docs/llm.md](docs/llm.md)); без неё документы честно получают статус `failed` с понятной причиной.
+Сброс всех данных: `make reset`.
 
 ## Документация
 - [Архитектура и схема](docs/architecture.md)
 - [Журнал решений](docs/decisions.md)
 - [Работа с моделью и локальный запуск](docs/llm.md)
+- [Ограничения и планы](docs/limitations.md)
+- [Отчёт об использовании ИИ-ассистентов](docs/ai-report.md)
 - [Вопросы кейсодержателю](docs/case/questions.md)
 - [Критерии оценки](docs/case/criteria.md) · [ТЗ кейса](docs/case/spec.md)
 - [Контракт API (OpenAPI)](docs/api/openapi.json)
