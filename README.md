@@ -27,6 +27,7 @@ make up                       # db, keycloak, backend, worker, frontend
 - [Архитектура и схема](docs/architecture.md)
 - [Журнал решений](docs/decisions.md)
 - [Работа с моделью и локальный запуск](docs/llm.md)
+- [Вопросы кейсодержателю](docs/case/questions.md)
 - [Критерии оценки](docs/case/criteria.md) · [ТЗ кейса](docs/case/spec.md)
 - [Контракт API (OpenAPI)](docs/api/openapi.json)
 

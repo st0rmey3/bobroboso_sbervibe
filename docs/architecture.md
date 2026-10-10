@@ -12,10 +12,11 @@ flowchart LR
   B -->|файлы| V[(том files)]
   W[worker<br/>N потоков] -->|claim SKIP LOCKED + lease| P
   W --> V
-  W -->|get_provider| L{{Слой модели<br/>backend/app/llm}}
+  W -->|get_ocr / get_provider| L{{Слой модели<br/>backend/app/llm}}
+  L -->|OCR_PROVIDER=olmocr| OC[olmOCR-2<br/>vLLM Сбера]
+  L -->|LLM_PROVIDER=openai| OA[Qwen3.8-27B<br/>OpenAI-совместимый API Сбера]
   L -->|LLM_PROVIDER=ollama| OL[Ollama<br/>локально]
   L -->|LLM_PROVIDER=gigachat| GC[GigaChat API]
-  L -->|LLM_PROVIDER=openai| OA[OpenAI-совместимый API]
 ```
 
 ## Поток обработки документа
