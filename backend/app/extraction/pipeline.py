@@ -3,7 +3,6 @@ preprocessing → recognizing (OCR, optional) → extracting (LLM) → validatin
 
 import logging
 import time
-from collections.abc import Callable
 
 from sqlalchemy.orm import Session
 
@@ -18,10 +17,9 @@ CONFIDENCE_REVIEW_THRESHOLD = 0.6
 _MISSING = "Обязательное поле не найдено"
 
 
-def _stage(session: Session, doc: Document, status: DocumentStatus, heartbeat: Callable[[], None]) -> None:
+def _stage(session: Session, doc: Document, status: DocumentStatus) -> None:
     doc.status = status
     session.commit()
-    heartbeat()
 
 
 def _finish(session: Session, doc: Document, status: DocumentStatus, reason: str | None, t0: float) -> None:
@@ -31,11 +29,11 @@ def _finish(session: Session, doc: Document, status: DocumentStatus, reason: str
     log.info("document %s → %s (%s) in %d ms", doc.id, status.value, doc.detected_type, doc.processing_ms)
 
 
-def process_document(session: Session, doc: Document, heartbeat: Callable[[], None]) -> None:
+def process_document(session: Session, doc: Document) -> None:
     """Raises LLMError for the worker to retry. Sets a final status otherwise."""
     t0 = time.monotonic()
     doc.status_reason = None
-    _stage(session, doc, DocumentStatus.preprocessing, heartbeat)
+    _stage(session, doc, DocumentStatus.preprocessing)
     try:
         pages = preprocess.load(storage.read(doc.storage_key), doc.mime)
     except preprocess.UnreadableFile as e:
@@ -44,18 +42,17 @@ def process_document(session: Session, doc: Document, heartbeat: Callable[[], No
     text, images = pages.text, pages.images
     ocr = get_ocr()
     if ocr is not None:
-        _stage(session, doc, DocumentStatus.recognizing, heartbeat)
+        _stage(session, doc, DocumentStatus.recognizing)
         page_texts = []
         for img in pages.images:
             page_texts.append(ocr.read_page(img))
-            heartbeat()
         text = "\n\n".join(t for t in [pages.text, *page_texts] if t.strip())
         images = []  # the LLM works on recognized text only
         doc.ocr_text = text
         if not text.strip():
             return _finish(session, doc, DocumentStatus.unreadable, "На изображении не найден текст", t0)
 
-    _stage(session, doc, DocumentStatus.extracting, heartbeat)
+    _stage(session, doc, DocumentStatus.extracting)
     llm = get_provider()
     cls = llm.complete_json(
         system=prompts.SYSTEM,
@@ -63,15 +60,14 @@ def process_document(session: Session, doc: Document, heartbeat: Callable[[], No
         schema=doctypes.classification_schema(),
         images=images,
     )
-    heartbeat()
     doc.llm_meta = {"provider": cls.provider, "model": cls.model, "ocr": ocr.name if ocr else None}
     if cls.data.get("readable") is False:
-        reason = cls.data.get("reason") or "Документ не читается"
+        reason = (cls.data.get("reason") or "Документ не читается").rstrip(". ")
         return _finish(session, doc, DocumentStatus.unreadable, f"{reason}. Загрузите более чёткое фото.", t0)
     detected = cls.data.get("doc_type")
     if detected not in doctypes.DOC_TYPES:
         doc.detected_type = doctypes.UNKNOWN
-        reason = cls.data.get("reason") or "Это не один из принимаемых документов"
+        reason = (cls.data.get("reason") or "Это не один из принимаемых документов").rstrip(". ")
         return _finish(session, doc, DocumentStatus.unreadable, f"{reason}. Загрузите нужный документ.", t0)
 
     dt = doctypes.DOC_TYPES[detected]
@@ -83,7 +79,7 @@ def process_document(session: Session, doc: Document, heartbeat: Callable[[], No
         images=images,
     )
 
-    _stage(session, doc, DocumentStatus.validating, heartbeat)
+    _stage(session, doc, DocumentStatus.validating)
     fields = doctypes.validate(dt, doctypes.fields_from(ext.data))
     doc.fields = fields
     labels = {f.name: f.label for f in dt.fields}

@@ -3,10 +3,11 @@ an unfinished job either stays `queued` or is `running` with an expiring lease t
 
 from datetime import timedelta
 
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, or_, select, update
 from sqlalchemy.orm import Session
 
 from app.config import settings
+from app.db import SessionLocal
 from app.models import Job, JobStatus, utcnow
 
 
@@ -41,9 +42,27 @@ def claim(session: Session, worker_id: str) -> Job | None:
     return job
 
 
-def heartbeat(session: Session, job: Job) -> None:
-    job.locked_until = utcnow() + timedelta(seconds=settings.job_lease_s)
-    session.commit()
+def extend_lease(job_id: int) -> None:
+    """Called periodically by a keep-alive thread while the job runs (own session: the main one may be busy)."""
+    with SessionLocal() as session:
+        session.execute(
+            update(Job)
+            .where(Job.id == job_id, Job.status == JobStatus.running)
+            .values(locked_until=utcnow() + timedelta(seconds=settings.job_lease_s))
+        )
+        session.commit()
+
+
+def release_own(worker_prefix: str) -> int:
+    """On worker start: jobs this worker held before a restart go straight back to the queue (no lease wait)."""
+    with SessionLocal() as session:
+        result = session.execute(
+            update(Job)
+            .where(Job.status == JobStatus.running, Job.locked_by.like(f"{worker_prefix}-%"))
+            .values(status=JobStatus.queued, locked_until=None, run_after=utcnow())
+        )
+        session.commit()
+        return result.rowcount
 
 
 def finish(session: Session, job: Job) -> None:

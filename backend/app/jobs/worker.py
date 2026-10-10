@@ -16,14 +16,33 @@ from app.models import Document, DocumentStatus, Job
 
 log = logging.getLogger("worker")
 stop = threading.Event()
+KEEPALIVE_S = 15
+
+
+def _keepalive(job_id: int, done: threading.Event) -> None:
+    """Extend the job lease while it runs, so a long model call never looks like a dead worker."""
+    while not done.wait(KEEPALIVE_S):
+        try:
+            queue.extend_lease(job_id)
+        except Exception:
+            log.exception("job %s: lease extension failed", job_id)
 
 
 def handle(job_id: int) -> None:
+    done = threading.Event()
+    threading.Thread(target=_keepalive, args=(job_id, done), daemon=True).start()
+    try:
+        _process(job_id)
+    finally:
+        done.set()
+
+
+def _process(job_id: int) -> None:
     with SessionLocal() as session:
         job = session.get(Job, job_id)
         doc = session.get(Document, job.document_id)
         try:
-            process_document(session, doc, heartbeat=lambda: queue.heartbeat(session, job))
+            process_document(session, doc)
             queue.finish(session, job)
             audit(session, doc.application_id, "system", "document_processed", doc.id, status=doc.status.value)
         except LLMError as e:
@@ -62,6 +81,9 @@ def loop(n: int) -> None:
 def main() -> None:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
     init_db()
+    released = queue.release_own(socket.gethostname())
+    if released:
+        log.info("re-queued %d job(s) left running before restart", released)
     signal.signal(signal.SIGTERM, lambda *_: stop.set())
     signal.signal(signal.SIGINT, lambda *_: stop.set())
     threads = [threading.Thread(target=loop, args=(i,), daemon=True) for i in range(settings.worker_concurrency)]

@@ -41,8 +41,8 @@ class Settings(BaseSettings):
     ocr_max_tokens: int = 3000
 
     # Worker
-    worker_concurrency: int = 4
-    job_lease_s: int = 300
+    worker_concurrency: int = 8
+    job_lease_s: int = 60
     job_max_attempts: int = 3
 
 
