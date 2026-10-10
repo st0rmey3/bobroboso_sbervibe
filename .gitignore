@@ -31,4 +31,5 @@ frontend/dist/
 
 # organizer test files (personal-data-like samples)
 case_docs/
+.aider*
 case_docs2/
