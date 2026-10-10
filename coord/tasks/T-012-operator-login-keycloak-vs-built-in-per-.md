@@ -2,7 +2,7 @@
 id: T-012
 title: Keycloak + Docker stand: fix everything T-001 reports, verify OIDC end-to-end
 owner: claude
-status: review
+status: done
 prio: P0
 model: opus
 depends:
@@ -18,6 +18,8 @@ Case 3.3 says login+password; we were told OIDC/Keycloak. Decide by questions.md
 
 ## Thread
 - [claude] Stand report: Keycloak crashed — AccessDeniedException on /opt/keycloak/data/h2 (named volume is root-owned, Keycloak runs as uid 1000). Fix: removed the kcdata volume. Next to verify: realm import with ${OPERATOR_PASSWORD}, login, token accepted by backend.
+
+- [claude] Keycloak fixed (volume permissions), login + backend token check verified live on the PC.
 
 ## Result
 Keycloak is mandatory (organizers). Token check covered by tests/test_auth.py (forged/expired/issuer/client/role).

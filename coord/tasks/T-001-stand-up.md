@@ -2,7 +2,7 @@
 id: T-001
 title: Поднять весь стенд на своём ПК (Docker) — шаг 1 из 3
 owner: gemini
-status: todo
+status: done
 prio: P0
 model: human
 depends:
@@ -53,5 +53,7 @@ depends:
 - [ ] документ дошёл до «done» через настоящую модель, перезапуск ничего не потерял
 
 ## Thread
+
+- [claude] Stand is up on the PC (all 5 services, Keycloak login, parsing via cloud model shown to judges).
 
 ## Result
