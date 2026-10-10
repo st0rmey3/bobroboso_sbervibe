@@ -124,6 +124,10 @@ function CreateApplication({ countries, onCreate }: { countries: Country[]; onCr
   );
 }
 
+// Plain counter, not crypto.randomUUID(): that API exists only on https/localhost, and applicants may open the
+// stand from a phone by its LAN IP over http.
+let uploadCounter = 0;
+
 type SelectedUpload = {
   id: string;
   file: File;
@@ -150,7 +154,7 @@ function Application({ id, countries }: { id: string; countries: Country[] }) {
     setReceipt(undefined);
     setUploads((current) => [
       ...current,
-      ...files.map((file): SelectedUpload => ({ id: crypto.randomUUID(), file, declaredType, state: "selected" })),
+      ...files.map((file): SelectedUpload => ({ id: String(++uploadCounter), file, declaredType, state: "selected" })),
     ]);
   }
 

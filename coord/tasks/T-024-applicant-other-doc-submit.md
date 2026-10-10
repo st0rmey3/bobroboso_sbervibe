@@ -2,7 +2,7 @@
 id: T-024
 title: Applicant: «Другой документ — определим сами» upload + explicit «Отправить комплект» with confirmation
 owner: codex
-status: review
+status: done
 prio: P0
 model: codex
 depends:
@@ -23,6 +23,8 @@ Gap: open-set kinds (ВУ РФ/Киргизии, паспорт Беларуси
 - [claude] Backend now accepts WEBP (Android photos) and fixes EXIF rotation of phone photos: add `.webp` to `accept` and to the hint «PDF, JPG, PNG или WEBP» in ApplicantPage.
 - [claude] Also: history action `file_viewed` → label «Открыт оригинал» (data.filename) in ApplicationCard `actions` map.
 - [codex] Claimed per user request. Add pending-file selection across slots, explicit batch submission with per-file results, and an untyped upload block driven by server-detected slots; preserve closed-application and retry behavior. T-023 remains out of scope.
+
+- [claude] Reviewed: OK. Fixed crypto.randomUUID() → counter (undefined over http by LAN IP, i.e. a judge's phone). Live: passport_by + ВУ KG via «Другой документ» → «Комплект принят», both detected and done. 22/22 browser tests.
 
 ## Result
 - Added untyped multi-file selection plus one explicit batch submit, truthful full/partial acceptance receipts with application number, per-file errors, removal, and retry of refused files only.
