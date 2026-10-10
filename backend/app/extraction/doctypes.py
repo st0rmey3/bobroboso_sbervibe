@@ -1,21 +1,24 @@
-"""Registry of document types and their fields — the single source of truth (frontend reads it via API).
+"""Countries, document types, fields and check rules (case section 4.1) — the single source of truth.
 
-TODO(T-003): replace the example with the 8 document types from docs/case/spec.md.
-Rules: fields must be generic for the document type — never values/positions from specific sample files.
+Frontend reads it via GET /api/public/countries. Fields are generic per document type — never values from samples.
+`required=True` marks the case's "минимум полей": without them the document counts as not parsed.
 """
 
 import re
 from dataclasses import dataclass, field
 from datetime import date, datetime
 
+EXPIRING_SOON_DAYS = 30
+
 
 @dataclass(frozen=True)
 class FieldSpec:
     name: str  # snake_case English key
     label: str  # Russian label for UI
-    kind: str = "string"  # string | date
-    required: bool = True
-    pattern: str | None = None  # regex for normalized value
+    kind: str = "string"  # string | date | digits
+    required: bool = False  # part of the case's minimum set
+    pattern: str | None = None  # regex the normalized value must match
+    rules: tuple[str, ...] = ()  # not_future | not_expired | latin
     hint: str = ""  # extra instruction for the model
 
 
@@ -23,31 +26,110 @@ class FieldSpec:
 class DocType:
     code: str
     label: str
-    description: str  # how to recognize it (used in the classification prompt)
+    description: str  # how to recognize it (classification prompt)
     fields: list[FieldSpec] = field(default_factory=list)
-    expiry_field: str | None = None  # field with expiry date (bonus: expiring documents)
+
+
+def _name(required: bool = True, rules: tuple[str, ...] = ()) -> FieldSpec:
+    return FieldSpec("full_name", "ФИО", required=required, rules=rules, hint="фамилия, имя, отчество одной строкой")
 
 
 DOC_TYPES: dict[str, DocType] = {
     dt.code: dt
     for dt in [
-        # EXAMPLE — replace / extend with the real list from the case.
         DocType(
-            code="passport_ru",
-            label="Паспорт гражданина РФ",
-            description="Внутренний паспорт РФ: разворот с фото, серия и номер, кем выдан, код подразделения.",
-            fields=[
-                FieldSpec("last_name", "Фамилия"),
-                FieldSpec("first_name", "Имя"),
-                FieldSpec("middle_name", "Отчество", required=False),
-                FieldSpec("birth_date", "Дата рождения", kind="date"),
-                FieldSpec("series_number", "Серия и номер", pattern=r"^\d{4} \d{6}$", hint="формат '1234 567890'"),
-                FieldSpec("issue_date", "Дата выдачи", kind="date"),
+            "passport_ru",
+            "Паспорт РФ (главный разворот)",
+            "Внутренний паспорт гражданина Российской Федерации, разворот с фотографией.",
+            [
+                FieldSpec("series", "Серия", kind="digits", required=True, pattern=r"^\d{4}$"),
+                FieldSpec("number", "Номер", kind="digits", required=True, pattern=r"^\d{6}$"),
+                _name(),
+                FieldSpec("birth_date", "Дата рождения", kind="date", required=True, rules=("not_future",)),
+                FieldSpec("birth_place", "Место рождения"),
                 FieldSpec("issued_by", "Кем выдан"),
-                FieldSpec("department_code", "Код подразделения", pattern=r"^\d{3}-\d{3}$"),
+                FieldSpec("issue_date", "Дата выдачи", kind="date", rules=("not_future",)),
+            ],
+        ),
+        DocType(
+            "snils",
+            "СНИЛС",
+            "Страховое свидетельство / уведомление о регистрации в системе индивидуального учёта (СНИЛС).",
+            [
+                FieldSpec("number", "Номер", kind="digits", required=True, pattern=r"^\d{11}$"),
+                _name(required=False),
+            ],
+        ),
+        DocType(
+            "inn",
+            "ИНН физического лица",
+            "Свидетельство о постановке на учёт физического лица в налоговом органе (ИНН).",
+            [FieldSpec("number", "ИНН", kind="digits", required=True, pattern=r"^\d{12}$")],
+        ),
+        DocType(
+            "passport_uz",
+            "Паспорт гражданина Узбекистана",
+            "Паспорт или ID-карта гражданина Республики Узбекистан (O'zbekiston Respublikasi).",
+            [
+                FieldSpec("number", "Номер", required=True),
+                _name(),
+                FieldSpec("birth_date", "Дата рождения", kind="date", rules=("not_future",)),
+                FieldSpec("expiry_date", "Срок действия", kind="date", rules=("not_expired",)),
+            ],
+        ),
+        DocType(
+            "migration_card",
+            "Миграционная карта",
+            "Миграционная карта иностранного гражданина при въезде в РФ.",
+            [
+                FieldSpec("number", "Номер", required=True),
+                FieldSpec("entry_date", "Дата въезда", kind="date", rules=("not_future",)),
+                FieldSpec("valid_until", "Действует до", kind="date"),
+            ],
+        ),
+        DocType(
+            "work_patent",
+            "Патент на работу",
+            "Патент на осуществление трудовой деятельности иностранным гражданином в РФ.",
+            [
+                FieldSpec("number", "Номер", required=True),
+                FieldSpec("issue_date", "Дата выдачи", kind="date", rules=("not_future",)),
+                FieldSpec("valid_until", "Действует до", kind="date", required=True, rules=("not_expired",)),
+                FieldSpec("region", "Регион"),
+                _name(required=False),
+            ],
+        ),
+        DocType(
+            "eu_id",
+            "Удостоверение личности / загранпаспорт гражданина ЕС",
+            "ID-карта или паспорт гражданина страны Евросоюза (European Union).",
+            [
+                FieldSpec("number", "Номер", required=True),
+                _name(rules=("latin",)),
+                FieldSpec("birth_date", "Дата рождения", kind="date", rules=("not_future",)),
+                FieldSpec("citizenship", "Гражданство"),
+                FieldSpec("expiry_date", "Срок действия", kind="date", rules=("not_expired",)),
+            ],
+        ),
+        DocType(
+            "residence_permit",
+            "Вид на жительство",
+            "Вид на жительство / residence permit.",
+            [
+                FieldSpec("number", "Номер", required=True),
+                FieldSpec("issue_date", "Дата выдачи", kind="date", rules=("not_future",)),
+                FieldSpec("expiry_date", "Срок действия", kind="date", required=True, rules=("not_expired",)),
+                FieldSpec("permit_type", "Тип разрешения"),
             ],
         ),
     ]
+}
+
+# Required document set per country — decided on the server, the client only picks the country.
+COUNTRIES: dict[str, tuple[str, list[str]]] = {
+    "RU": ("Россия", ["passport_ru", "snils", "inn"]),
+    "UZ": ("Узбекистан", ["passport_uz", "migration_card", "work_patent"]),
+    "EU": ("Страна Евросоюза", ["eu_id", "residence_permit"]),
 }
 
 UNKNOWN = "unknown"
@@ -59,10 +141,9 @@ def classification_schema() -> dict:
         "properties": {
             "doc_type": {"type": "string", "enum": [*DOC_TYPES, UNKNOWN]},
             "readable": {"type": "boolean"},
-            "confidence": {"type": "number"},
             "reason": {"type": "string"},
         },
-        "required": ["doc_type", "readable", "confidence"],
+        "required": ["doc_type", "readable"],
     }
 
 
@@ -79,8 +160,8 @@ def extraction_schema(dt: DocType) -> dict:
     }
 
 
-def _parse_date(value: str) -> date | None:
-    for fmt in ("%Y-%m-%d", "%d.%m.%Y", "%d/%m/%Y", "%d-%m-%Y"):
+def parse_date(value: str) -> date | None:
+    for fmt in ("%Y-%m-%d", "%d.%m.%Y", "%d/%m/%Y", "%d-%m-%Y", "%d %m %Y"):
         try:
             return datetime.strptime(value.strip(), fmt).date()
         except ValueError:
@@ -88,28 +169,51 @@ def _parse_date(value: str) -> date | None:
     return None
 
 
-def validate(dt: DocType, raw_fields: dict) -> dict[str, dict]:
-    """Normalize model output and add issues. Returns {name: {value, confidence, issues}}."""
+def _check_rules(spec: FieldSpec, value: str, today: date) -> list[str]:
+    issues = []
+    if spec.kind == "date":
+        d = date.fromisoformat(value)
+        if "not_future" in spec.rules and d > today:
+            issues.append("Дата в будущем")
+        if "not_expired" in spec.rules:
+            if d < today:
+                issues.append("Срок действия истёк")
+            elif (d - today).days <= EXPIRING_SOON_DAYS:
+                issues.append(f"Истекает через {(d - today).days} дн.")
+    if "latin" in spec.rules and re.search(r"[А-Яа-яЁё]", value):
+        issues.append("Ожидается латиница")
+    return issues
+
+
+def validate(dt: DocType, raw_fields: dict, today: date | None = None) -> dict[str, dict]:
+    """Normalize model output and apply the case's check rules. Returns {name: {value, confidence, issues}}."""
+    today = today or date.today()
     out: dict[str, dict] = {}
     for spec in dt.fields:
         item = raw_fields.get(spec.name) or {}
         value = item.get("value")
         value = value.strip() if isinstance(value, str) and value.strip() else None
-        conf = float(item.get("confidence") or 0.0)
-        conf = min(max(conf, 0.0), 1.0)
+        conf = min(max(float(item.get("confidence") or 0.0), 0.0), 1.0)
         issues: list[str] = []
-        if value is None:
-            if spec.required:
-                issues.append("Поле не найдено в документе")
-        elif spec.kind == "date":
-            d = _parse_date(value)
+        if value is not None and spec.kind == "digits":
+            value = re.sub(r"\D", "", value) or None
+        if value is not None and spec.kind == "date":
+            d = parse_date(value)
             if d is None:
                 issues.append("Не удалось распознать дату")
             else:
                 value = d.isoformat()
-        if value is not None and spec.pattern and spec.kind != "date" and not re.match(spec.pattern, value):
-            issues.append("Формат не совпадает с ожидаемым")
-        if issues:
-            conf = min(conf, 0.3)
+        if value is None:
+            if spec.required:
+                issues.append("Обязательное поле не найдено")
+        elif not issues:
+            if spec.pattern and not re.match(spec.pattern, value):
+                issues.append("Неверный формат")
+            issues += _check_rules(spec, value, today)
         out[spec.name] = {"value": value, "confidence": round(conf, 2), "issues": issues}
     return out
+
+
+def missing_required(dt: DocType, fields: dict[str, dict]) -> list[str]:
+    """Labels of minimum fields without a value → the document counts as not parsed."""
+    return [f.label for f in dt.fields if f.required and not fields.get(f.name, {}).get("value")]

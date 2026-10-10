@@ -1,17 +1,49 @@
+from datetime import date
+
 from app.extraction import doctypes
 from app.extraction.preprocess import sniff_mime
 from app.llm.base import LLMError, parse_json
+from app.llm.ocr import strip_front_matter
 
-DT = next(iter(doctypes.DOC_TYPES.values()))
+TODAY = date(2026, 10, 10)
+DT = doctypes.DOC_TYPES
 
 
-def test_validate_normalizes_dates_and_flags_missing():
-    date_field = next(f for f in DT.fields if f.kind == "date")
-    required = next(f for f in DT.fields if f.required and f.name != date_field.name)
-    out = doctypes.validate(DT, {date_field.name: {"value": "01.02.2000", "confidence": 0.9}})
-    assert out[date_field.name]["value"] == "2000-02-01"
-    assert out[required.name]["value"] is None
-    assert out[required.name]["issues"]
+def f(value, confidence=0.9):
+    return {"value": value, "confidence": confidence}
+
+
+def test_eight_document_types_cover_all_countries():
+    assert len(DT) == 8
+    assert sorted(c for _, codes in doctypes.COUNTRIES.values() for c in codes) == sorted(DT)
+
+
+def test_passport_ru_normalizes_and_checks():
+    out = doctypes.validate(
+        DT["passport_ru"],
+        {"series": f("45 12"), "number": f("12345"), "birth_date": f("01.02.2030"), "full_name": f("Иванов Иван")},
+        TODAY,
+    )
+    assert out["series"] == {"value": "4512", "confidence": 0.9, "issues": []}
+    assert out["number"]["issues"] == ["Неверный формат"]
+    assert out["birth_date"]["value"] == "2030-02-01"
+    assert out["birth_date"]["issues"] == ["Дата в будущем"]
+
+
+def test_expired_patent_is_flagged_not_dropped():
+    out = doctypes.validate(DT["work_patent"], {"number": f("77 123"), "valid_until": f("01.01.2026")}, TODAY)
+    assert out["valid_until"]["issues"] == ["Срок действия истёк"]
+    assert doctypes.missing_required(DT["work_patent"], out) == []
+
+
+def test_missing_minimum_fields():
+    out = doctypes.validate(DT["snils"], {}, TODAY)
+    assert doctypes.missing_required(DT["snils"], out) == ["Номер"]
+
+
+def test_eu_name_must_be_latin():
+    out = doctypes.validate(DT["eu_id"], {"number": f("X1"), "full_name": f("Мюллер Ханс")}, TODAY)
+    assert out["full_name"]["issues"] == ["Ожидается латиница"]
 
 
 def test_parse_json_strips_fences():
@@ -25,6 +57,10 @@ def test_parse_json_rejects_garbage():
         assert e.retryable
     else:
         raise AssertionError
+
+
+def test_olmocr_front_matter_is_removed():
+    assert strip_front_matter("---\nprimary_language: ru\n---\nПАСПОРТ") == "ПАСПОРТ"
 
 
 def test_sniff_mime_ignores_extension():
