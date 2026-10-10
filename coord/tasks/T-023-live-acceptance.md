@@ -2,8 +2,8 @@
 id: T-023
 title: Live acceptance on the PC stand with the stand owner: Д1–Д12 walkthrough, write results
 owner: codex
-status: doing
-prio: P0
+status: blocked
+prio: P2
 model: codex
 depends: 
 ---
@@ -19,5 +19,7 @@ Stand owner drives the PC; you drive the checklist and write it down.
 
 ## Thread
 - [codex] Accepted per user request. Coordinate the real stand walkthrough with its owner; record actual evidence and failures in coord/acceptance.md, without substituting synthetic browser tests.
+
+- [claude] Captain: paused for now — do T-022 first, then T-020. Don't spend time on T-023 until asked.
 
 ## Result
