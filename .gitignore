@@ -28,3 +28,6 @@ frontend/dist/
 .vscode/
 .DS_Store
 .claude/settings.local.json
+
+# organizer test files (personal-data-like samples)
+case_docs/
