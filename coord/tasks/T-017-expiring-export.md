@@ -2,7 +2,7 @@
 id: T-017
 title: Bonus: expiring documents list + CSV export for the operator
 owner: claude
-status: todo
+status: review
 prio: P1
 model: sonnet
 depends: 

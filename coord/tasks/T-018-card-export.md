@@ -2,7 +2,7 @@
 id: T-018
 title: Bonus: applicant card export for HR (CSV/JSON file)
 owner: claude
-status: todo
+status: review
 prio: P1
 model: sonnet
 depends: 
