@@ -21,8 +21,9 @@ services:
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD}
       OPERATOR_PASSWORD: ${OPERATOR_PASSWORD}
     volumes:
+      # realm + operator user are (re)imported from this file on a fresh container; no data volume:
+      # a named volume is created root-owned and Keycloak (uid 1000) can't write its H2 files there.
       - ./keycloak:/opt/keycloak/data/import:ro
-      - kcdata:/opt/keycloak/data/h2
     ports:
       - "8080:8080"
     restart: unless-stopped
@@ -76,5 +77,4 @@ services:
 volumes:
   pgdata:
   files:
-  kcdata:
   ollama:

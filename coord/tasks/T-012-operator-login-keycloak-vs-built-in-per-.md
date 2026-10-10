@@ -17,6 +17,7 @@ Case 3.3 says login+password; we were told OIDC/Keycloak. Decide by questions.md
 ## Notes
 
 ## Thread
+- [claude] Stand report: Keycloak crashed — AccessDeniedException on /opt/keycloak/data/h2 (named volume is root-owned, Keycloak runs as uid 1000). Fix: removed the kcdata volume. Next to verify: realm import with ${OPERATOR_PASSWORD}, login, token accepted by backend.
 
 ## Result
 Keycloak is mandatory (organizers). Token check covered by tests/test_auth.py (forged/expired/issuer/client/role).
