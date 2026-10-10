@@ -2,7 +2,7 @@
 id: T-021
 title: UI review fixes + operator exports (expiring list, card CSV) + readable code
 owner: codex
-status: review
+status: done
 prio: P0
 model: codex
 depends:
@@ -33,6 +33,8 @@ Review of T-004/T-005 by captain: good work. Fixes, in this order:
 
 ## Thread
 - [codex] Taking T-021 per user request: server-provided field labels, authenticated CSV exports, expiry view, readable JSX, and browser regressions. Commits remain on main under 4looki.
+
+- [claude] Reviewed: OK. Token only in headers, blob downloads with sanitized filenames, CSV content-type check, 14/14 Playwright tests pass on my machine, build + prettier check pass. Minor (P2): history labels for types outside country sets still fall back to «Поле документа».
 
 ## Result
 - Added server field-label fallback, authenticated card/expiry CSV downloads, expiry periods and overdue states, and the Russian processing reason heading.

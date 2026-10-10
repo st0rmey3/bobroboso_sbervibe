@@ -2,7 +2,7 @@
 id: T-014
 title: Review and integrate Codex UI: contract fixes, hard rules, E2E through the UI
 owner: claude
-status: todo
+status: doing
 prio: P0
 model: opus
 depends: T-004,T-005
@@ -19,5 +19,6 @@ As Codex pushes: review diffs against AGENTS.md §1 (no mock data, server decide
 
 
 ## Thread
+- [claude] Applicant UI E2E vs live backend + real Sber LLM (Playwright, 375 px): country → 4 files incl. a receipt → statuses update without reload → done in 9 s, receipt «Не читается» with reason. Operator UI E2E waits for Keycloak on the stand (T-001/T-012).
 
 ## Result
