@@ -70,8 +70,8 @@ services:
     profiles: ["local-llm"]
     volumes:
       - ollama:/root/.ollama
-    ports:
-      - "11434:11434"
+    # no published port: it would hijack 11434 from a native Ollama on the host (which has the GPU);
+    # backend/worker reach this container as http://ollama:11434
     restart: unless-stopped
 
 volumes:

@@ -45,6 +45,10 @@
    Если оставить 8 потоков, запросы ждут в очереди Ollama, упираются в таймаут и уходят на повтор.
 5. Перезапустить бэкенд и воркер: `docker compose up -d backend worker`.
 
+> Не запускайте одновременно вариант А и контейнер `ollama` из варианта Б: если в `ollama ps` видно `100% CPU`,
+> а в логе `%LOCALAPPDATA%\Ollama\server.log` пусто — проверьте `docker ps` и остановите контейнер
+> (`docker compose --profile local-llm stop ollama`).
+
 ## 3. Вариант Б — Ollama в Docker (Linux-сервер)
 ```bash
 make up-local-llm          # = docker compose --profile local-llm up -d + ollama pull
