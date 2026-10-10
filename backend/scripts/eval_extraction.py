@@ -51,7 +51,7 @@ def main(folder: str) -> None:
             schema=doctypes.extraction_schema(dt),
             images=images,
         )
-        got = doctypes.validate(dt, ext.data.get("fields") or {})
+        got = doctypes.validate(dt, doctypes.fields_from(ext.data))
         for name, want in expected["fields"].items():
             total += 1
             ok = norm(got.get(name, {}).get("value")) == norm(want)

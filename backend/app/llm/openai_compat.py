@@ -32,6 +32,8 @@ class OpenAICompatProvider(LLMProvider):
             "response_format": {"type": "json_object"},
             "messages": [{"role": "system", "content": system}, {"role": "user", "content": content}],
         }
+        if settings.openai_disable_thinking:
+            body["chat_template_kwargs"] = {"enable_thinking": False}
         t0 = time.monotonic()
         try:
             r = self._client.post("/chat/completions", json=body)

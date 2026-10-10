@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     openai_base_url: str = "https://api.openai.com/v1"
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"
+    openai_disable_thinking: bool = False  # Qwen3-style models on vLLM: skip reasoning, ~3x faster
 
     # OCR (separate text-recognition model); "none" = LLM reads images itself
     ocr_provider: str = "none"  # olmocr | none
