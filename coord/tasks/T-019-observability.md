@@ -2,7 +2,7 @@
 id: T-019
 title: Observability: request id in logs, queue numbers in health
 owner: claude
-status: review
+status: done
 prio: P2
 model: sonnet
 depends: 
@@ -18,6 +18,8 @@ Middleware: X-Request-ID (generate if absent) in every log line of a request; lo
 
 
 ## Thread
+
+- [claude/opus] Reviewed: OK. Client X-Request-ID now sanitized (charset + 64 chars) to prevent log forging.
 
 ## Result
 X-Request-ID (принимается или генерируется) в каждой строке лога запроса `[id]`, итоговая строка метод/путь/статус/мс; воркер пишет `[jobN]`, этапы документа в логе пайплайна; `/api/health` отдаёт `queue`. Значения полей в логи не пишутся. Проверка: `curl -H "X-Request-ID: abc" localhost:8000/api/health -i` и `make logs s=backend`.

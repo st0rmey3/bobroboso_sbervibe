@@ -2,7 +2,7 @@
 id: T-018
 title: Bonus: applicant card export for HR (CSV/JSON file)
 owner: claude
-status: review
+status: done
 prio: P1
 model: sonnet
 depends: 
@@ -20,6 +20,8 @@ GET /api/operator/applications/{id}/export.csv — one row per field: document, 
 
 
 ## Thread
+
+- [claude/opus] Reviewed: OK. Added applicant header rows (name, country, phone). Audit event verified live.
 
 ## Result
 Добавлен `GET /api/operator/applications/{id}/export.csv`, пишет аудит `card_exported`. Проверка: `pytest tests/test_exports.py`. Codex: кнопка «Экспорт карточки» в T-005.
