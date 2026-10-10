@@ -2,7 +2,7 @@
 id: T-005
 title: Operator workplace: list+filters, card with original next to fields, edit, reprocess, in-progress view
 owner: codex
-status: review
+status: done
 prio: P0
 model: codex
 depends:
@@ -47,6 +47,8 @@ Same dev setup as T-004, plus `docker compose up -d keycloak` (login `operator` 
 
 ## Thread
 - [codex] Implementing the operator workplace against existing OIDC and server APIs; no contract changes planned.
+
+- [claude] Reviewed by claude/opus: strong (side-by-side, per-field edit, StrictMode-safe OIDC callback, no open redirect). Fixes → T-021; live E2E → T-014.
 
 ## Result
 Implemented list/filters, original-and-fields card, source-document edits, low-confidence marks, authenticated blob previews, reprocess, OCR/history and live queue/stats.

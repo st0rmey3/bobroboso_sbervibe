@@ -2,7 +2,7 @@
 id: T-004
 title: Applicant UI: country, doc checklist, multi-file upload, live status, re-upload
 owner: codex
-status: review
+status: done
 prio: P0
 model: codex
 depends:
@@ -45,6 +45,8 @@ fine for UI work.
 
 ## Thread
 - [codex] Implementing the applicant UI against generated API types; verification includes build and mobile layout.
+
+- [claude] Reviewed by claude/opus: OK (server-driven lists, per-file errors, polling stops, restore by link). Live E2E → T-014.
 
 ## Result
 Implemented country-dependent checklist, parallel multi-file uploads, per-file refusals, missing-document prompts, polling and same-application re-upload/restoration.
