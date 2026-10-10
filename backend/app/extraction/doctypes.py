@@ -90,13 +90,18 @@ DOC_TYPES: dict[str, DocType] = {
         DocType(
             "work_patent",
             "Патент на работу",
-            "Патент на осуществление трудовой деятельности иностранным гражданином в РФ.",
+            "Патент на осуществление трудовой деятельности иностранным гражданином в РФ (МВД России). "
+            "Лицевая сторона: серия, номер, ФИО, гражданство; оборот: территория действия, даты.",
             [
-                FieldSpec("number", "Номер", required=True),
+                FieldSpec("series", "Серия", kind="digits"),
+                FieldSpec("number", "Номер", required=True, hint="номер патента после знака «№» рядом с серией"),
+                FieldSpec("blank_number", "Номер бланка", hint="буквенно-цифровой номер бланка, обычно внизу оборота"),
+                _name(required=False),
+                FieldSpec("birth_date", "Дата рождения", kind="date", rules=("not_future",)),
+                FieldSpec("citizenship", "Гражданство"),
                 FieldSpec("issue_date", "Дата выдачи", kind="date", rules=("not_future",)),
                 FieldSpec("valid_until", "Действует до", kind="date", required=True, rules=("not_expired",)),
-                FieldSpec("region", "Регион"),
-                _name(required=False),
+                FieldSpec("region", "Регион (территория действия)"),
             ],
         ),
         DocType(
@@ -120,6 +125,56 @@ DOC_TYPES: dict[str, DocType] = {
                 FieldSpec("issue_date", "Дата выдачи", kind="date", rules=("not_future",)),
                 FieldSpec("expiry_date", "Срок действия", kind="date", required=True, rules=("not_expired",)),
                 FieldSpec("permit_type", "Тип разрешения"),
+            ],
+        ),
+        # --- types present in the organizers' open test set (case_docs/) — country mapping pending, see questions.md
+        DocType(
+            "driver_license_ru",
+            "Водительское удостоверение РФ",
+            "Водительское удостоверение Российской Федерации (RUS, permis de conduire), лицевая сторона или оборот.",
+            [
+                FieldSpec("number", "Номер", kind="digits", required=True, pattern=r"^\d{10}$", hint="поле 5"),
+                _name(),
+                FieldSpec("birth_date", "Дата рождения", kind="date", rules=("not_future",)),
+                FieldSpec("issue_date", "Дата выдачи", kind="date", rules=("not_future",), hint="поле 4a"),
+                FieldSpec("expiry_date", "Действует до", kind="date", rules=("not_expired",), hint="поле 4b"),
+                FieldSpec("categories", "Категории", hint="через запятую"),
+            ],
+        ),
+        DocType(
+            "driver_license_kg",
+            "Водительское удостоверение Киргизии",
+            "Водительское удостоверение Кыргызской Республики (KG, айдоочулук күбөлүк).",
+            [
+                FieldSpec("number", "Номер", required=True, hint="поле 5"),
+                _name(),
+                FieldSpec("birth_date", "Дата рождения", kind="date", rules=("not_future",)),
+                FieldSpec("issue_date", "Дата выдачи", kind="date", rules=("not_future",), hint="поле 4a"),
+                FieldSpec("expiry_date", "Действует до", kind="date", rules=("not_expired",), hint="поле 4b"),
+                FieldSpec("personal_number", "Персональный номер", hint="поле 4d"),
+            ],
+        ),
+        DocType(
+            "passport_by",
+            "Паспорт гражданина Беларуси",
+            "Паспорт Республики Беларусь (REPUBLIC OF BELARUS, BLR).",
+            [
+                FieldSpec("number", "Номер", required=True, pattern=r"^[A-Z]{2}\d{7}$"),
+                _name(rules=("latin",)),
+                FieldSpec("birth_date", "Дата рождения", kind="date", rules=("not_future",)),
+                FieldSpec("expiry_date", "Срок действия", kind="date", rules=("not_expired",)),
+                FieldSpec("personal_number", "Идентификационный номер"),
+            ],
+        ),
+        DocType(
+            "passport_in",
+            "Паспорт гражданина Индии",
+            "Паспорт Республики Индия (REPUBLIC OF INDIA, IND).",
+            [
+                FieldSpec("number", "Номер", required=True, pattern=r"^[A-Z]\d{7}$"),
+                _name(rules=("latin",)),
+                FieldSpec("birth_date", "Дата рождения", kind="date", rules=("not_future",)),
+                FieldSpec("expiry_date", "Срок действия", kind="date", rules=("not_expired",)),
             ],
         ),
     ]
@@ -161,9 +216,9 @@ def extraction_schema(dt: DocType) -> dict:
 
 
 def parse_date(value: str) -> date | None:
-    for fmt in ("%Y-%m-%d", "%d.%m.%Y", "%d/%m/%Y", "%d-%m-%Y", "%d %m %Y"):
+    for fmt in ("%Y-%m-%d", "%d.%m.%Y", "%d/%m/%Y", "%d-%m-%Y", "%d %m %Y", "%d %b %Y", "%d %B %Y"):
         try:
-            return datetime.strptime(value.strip(), fmt).date()
+            return datetime.strptime(value.strip().title(), fmt).date()
         except ValueError:
             continue
     return None
@@ -185,12 +240,20 @@ def _check_rules(spec: FieldSpec, value: str, today: date) -> list[str]:
     return issues
 
 
+def fields_from(data: dict) -> dict:
+    """Models don't always keep the shape: accept {"fields": {...}} or the fields at top level."""
+    inner = data.get("fields")
+    return inner if isinstance(inner, dict) else data
+
+
 def validate(dt: DocType, raw_fields: dict, today: date | None = None) -> dict[str, dict]:
     """Normalize model output and apply the case's check rules. Returns {name: {value, confidence, issues}}."""
     today = today or date.today()
     out: dict[str, dict] = {}
     for spec in dt.fields:
         item = raw_fields.get(spec.name) or {}
+        if not isinstance(item, dict):  # plain value instead of {value, confidence}
+            item = {"value": str(item), "confidence": 0.5}
         value = item.get("value")
         value = value.strip() if isinstance(value, str) and value.strip() else None
         conf = min(max(float(item.get("confidence") or 0.0), 0.0), 1.0)

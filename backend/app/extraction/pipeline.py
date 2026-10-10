@@ -71,7 +71,8 @@ def process_document(session: Session, doc: Document, heartbeat: Callable[[], No
     detected = cls.data.get("doc_type")
     if detected not in doctypes.DOC_TYPES:
         doc.detected_type = doctypes.UNKNOWN
-        return _finish(session, doc, DocumentStatus.needs_review, "Не удалось определить вид документа", t0)
+        reason = cls.data.get("reason") or "Это не один из принимаемых документов"
+        return _finish(session, doc, DocumentStatus.unreadable, f"{reason}. Загрузите нужный документ.", t0)
 
     dt = doctypes.DOC_TYPES[detected]
     doc.detected_type = dt.code
@@ -83,16 +84,14 @@ def process_document(session: Session, doc: Document, heartbeat: Callable[[], No
     )
 
     _stage(session, doc, DocumentStatus.validating, heartbeat)
-    fields = doctypes.validate(dt, ext.data.get("fields") or {})
+    fields = doctypes.validate(dt, doctypes.fields_from(ext.data))
     doc.fields = fields
     labels = {f.name: f.label for f in dt.fields}
     reasons = []
     if doc.declared_type and doc.declared_type != dt.code:
         declared = doctypes.DOC_TYPES[doc.declared_type].label
         reasons.append(f"Загружен как «{declared}», а распознан как «{dt.label}»")
-    missing = doctypes.missing_required(dt, fields)
-    if missing:
-        reasons.append("Не найдены обязательные поля: " + ", ".join(missing))
+    # minimum fields are checked on the whole document (front + back), see applications.doc_slots
     problems = [f"{labels[n]}: {i}" for n, f in fields.items() for i in f["issues"] if i != _MISSING]
     if problems:
         reasons.append("; ".join(problems))

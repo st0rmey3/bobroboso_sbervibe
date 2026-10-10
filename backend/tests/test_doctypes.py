@@ -13,9 +13,15 @@ def f(value, confidence=0.9):
     return {"value": value, "confidence": confidence}
 
 
-def test_eight_document_types_cover_all_countries():
-    assert len(DT) == 8
-    assert sorted(c for _, codes in doctypes.COUNTRIES.values() for c in codes) == sorted(DT)
+def test_country_sets_use_known_types():
+    assert len(DT) >= 8
+    assert all(c in DT for _, codes in doctypes.COUNTRIES.values() for c in codes)
+
+
+def test_model_output_shape_is_tolerated():
+    assert doctypes.fields_from({"number": "1"}) == {"number": "1"}
+    out = doctypes.validate(DT["inn"], {"number": "0278 6192 7020"}, TODAY)
+    assert out["number"]["value"] == "027861927020"
 
 
 def test_passport_ru_normalizes_and_checks():
