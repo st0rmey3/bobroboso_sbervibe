@@ -2,6 +2,7 @@
 
 from sqlalchemy.orm import Session
 
+from app.crosscheck import cross_checks
 from app.extraction.doctypes import DOC_TYPES, missing_required
 from app.models import Application, ApplicationStatus, AuditEvent, DocumentStatus
 
@@ -108,10 +109,12 @@ def refresh_status(app: Application) -> None:
         app.status = ApplicationStatus.draft
     elif statuses & _IN_PROGRESS:
         app.status = ApplicationStatus.processing
-    elif statuses - {DocumentStatus.done} or missing_types(app):
-        app.status = ApplicationStatus.needs_review
     else:
-        app.status = ApplicationStatus.ready
+        slots = doc_slots(app)
+        problems = any(sl["state"] in ("missing", "problem") for sl in slots if sl["required"] or sl["document_ids"])
+        mismatch = cross_checks(app.full_name, slots)
+        attention = statuses - {DocumentStatus.done} or problems or mismatch
+        app.status = ApplicationStatus.needs_review if attention else ApplicationStatus.ready
 
 
 def audit(session: Session, app_id: str, actor: str, action: str, document_id: str | None = None, **data) -> None:

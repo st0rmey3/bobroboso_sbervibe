@@ -345,6 +345,11 @@ export interface components {
             created_at: string;
             /** Slots */
             slots: components["schemas"]["SlotOperator"][];
+            /**
+             * Cross Checks
+             * @default []
+             */
+            cross_checks: string[];
             /** Documents */
             documents: components["schemas"]["DocumentOperator"][];
             /** Missing */

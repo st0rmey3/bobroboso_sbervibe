@@ -133,6 +133,7 @@ class ApplicationOperator(BaseModel):
     doc_set: list[str]
     created_at: datetime
     slots: list[SlotOperator]
+    cross_checks: list[str] = []  # name / birth date mismatches between documents and the typed name
     documents: list[DocumentOperator]
     missing: list[str]
     history: list[AuditEventOut]

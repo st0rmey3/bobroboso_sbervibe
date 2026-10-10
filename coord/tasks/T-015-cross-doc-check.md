@@ -2,7 +2,7 @@
 id: T-015
 title: Bonus: cross-document consistency (name/birth date across documents, Latin vs Cyrillic)
 owner: claude
-status: doing
+status: done
 prio: P0
 model: opus
 depends: 
@@ -21,3 +21,7 @@ Keep the transliteration table small and explainable (GOST-like), one function.
 ## Thread
 
 ## Result
+backend/app/crosscheck.py: names → Latin transliteration + spelling variants, one-to-one word match (similarity 0.75),
+patronymic may be missing. Checks typed name vs each document, documents vs each other, birth dates. Wired into
+ApplicationOperator.cross_checks and application status (mismatch → needs_review); operator edit re-computes status.
+Live: 0 false alarms on open-set applications; typed «НеМаксим Чернецов» vs «КИСЕЛЕВ МАКСИМ» → warning. UI: T-022 (codex).

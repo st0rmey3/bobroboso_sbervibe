@@ -883,6 +883,14 @@
             "type": "array",
             "title": "Slots"
           },
+          "cross_checks": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Cross Checks",
+            "default": []
+          },
           "documents": {
             "items": {
               "$ref": "#/components/schemas/DocumentOperator"

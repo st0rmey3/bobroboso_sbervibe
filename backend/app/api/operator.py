@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from app import storage
 from app.applications import audit, doc_slots, missing_types, refresh_status
 from app.auth import Operator, require_operator
+from app.crosscheck import cross_checks
 from app.db import get_session
 from app.exports import card_csv, expiring_csv, expiring_rows
 from app.extraction.doctypes import DOC_TYPES, validate
@@ -87,6 +88,7 @@ def get_application(app_id: str, session: Session = Depends(get_session)) -> App
     app = session.get(Application, app_id)
     if app is None:
         raise HTTPException(404, "Заявка не найдена")
+    slots = doc_slots(app)
     history = session.scalars(
         select(AuditEvent).where(AuditEvent.application_id == app_id).order_by(AuditEvent.created_at)
     )
@@ -98,7 +100,8 @@ def get_application(app_id: str, session: Session = Depends(get_session)) -> App
         country=app.country,
         doc_set=app.doc_set,
         created_at=app.created_at,
-        slots=[SlotOperator.model_validate(s) for s in doc_slots(app)],
+        slots=[SlotOperator.model_validate(s) for s in slots],
+        cross_checks=cross_checks(app.full_name, slots),
         documents=[DocumentOperator.model_validate(d) for d in app.documents],
         missing=missing_types(app),
         history=[AuditEventOut.model_validate(e) for e in history],
@@ -134,6 +137,7 @@ def update_fields(
         fields[name] = {**checked, "edited_by": op.username}
     doc.fields = fields  # reassign so SQLAlchemy sees the JSON change
     audit(session, doc.application_id, f"operator:{op.username}", "fields_edited", doc.id, changes=changes)
+    refresh_status(doc.application)
     session.commit()
     return DocumentOperator.model_validate(doc)
 
