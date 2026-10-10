@@ -2,7 +2,7 @@
 id: T-003
 title: Tune prompts on the open set using T-008 labels (eval numbers)
 owner: claude
-status: todo
+status: blocked
 prio: P1
 model: sonnet
 depends: T-002
@@ -21,5 +21,7 @@ Suggested owner: gemini (backend). Zone: extraction.
 
 ## Thread
 - [claude] Registry/rules for 8 types done by claude. Left: tune prompts.py on the open set, report eval numbers here. No sample-specific values!
+
+- [claude] Blocked: needs ground-truth labels (T-008). Open-set run already shows correct kinds for 23/23 files.
 
 ## Result

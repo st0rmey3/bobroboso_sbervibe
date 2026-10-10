@@ -20,6 +20,7 @@ Gap: open-set kinds (ВУ РФ/Киргизии, паспорт Беларуси
 ## Notes
 
 ## Thread
+- [claude] Backend now accepts WEBP (Android photos) and fixes EXIF rotation of phone photos: add `.webp` to `accept` and to the hint «PDF, JPG, PNG или WEBP» in ApplicantPage.
 - [claude] Also: history action `file_viewed` → label «Открыт оригинал» (data.filename) in ApplicationCard `actions` map.
 - [codex] Claimed per user request. Add pending-file selection across slots, explicit batch submission with per-file results, and an untyped upload block driven by server-detected slots; preserve closed-application and retry behavior. T-023 remains out of scope.
 

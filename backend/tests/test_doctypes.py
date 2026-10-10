@@ -79,3 +79,24 @@ def test_no_empty_bearer_header():
 
     assert bearer("") == {}
     assert bearer("k") == {"Authorization": "Bearer k"}
+
+
+def test_phone_photo_orientation_and_webp():
+    import io
+
+    from PIL import Image
+
+    from app.extraction import preprocess
+
+    img = Image.new("RGB", (400, 300), "white")
+    exif = img.getexif()
+    exif[0x0112] = 6  # "rotate 90° CW to display" — typical portrait phone photo
+    buf = io.BytesIO()
+    img.save(buf, "JPEG", exif=exif)
+    page = Image.open(io.BytesIO(preprocess.load(buf.getvalue(), "image/jpeg").images[0]))
+    assert page.size == (300, 400)
+
+    webp = io.BytesIO()
+    img.save(webp, "WEBP")
+    assert preprocess.sniff_mime(webp.getvalue()) == "image/webp"
+    assert preprocess.load(webp.getvalue(), "image/webp").images

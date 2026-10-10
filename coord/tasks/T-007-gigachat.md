@@ -2,7 +2,7 @@
 id: T-007
 title: Verify GigaChat provider with real keys
 owner: claude
-status: todo
+status: blocked
 prio: P2
 model: sonnet
 depends: 
@@ -20,5 +20,7 @@ Suggested owner: gemini. Needs GIGACHAT_CREDENTIALS from organizers (never commi
 
 ## Thread
 - [claude] Depends on keys (questions.md A1, C14). External = Sber olmOCR + GigaChat (or any OpenAI-compatible).
+
+- [claude] Blocked: no GigaChat keys. External provider = Sber Qwen (OpenAI-compatible) covers 5.3.
 
 ## Result

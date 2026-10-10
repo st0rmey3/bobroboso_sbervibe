@@ -141,7 +141,7 @@ def upload_document(
         raise _reject(session, app, 413, f"Общий объём заявки больше {settings.max_application_mb} МБ", filename=name)
     mime = sniff_mime(data)
     if mime not in ALLOWED_MIME:
-        raise _reject(session, app, 415, "Поддерживаются только PDF, JPG и PNG", filename=name)
+        raise _reject(session, app, 415, "Поддерживаются только PDF, JPG, PNG и WEBP", filename=name)
 
     sha = hashlib.sha256(data).hexdigest()
     if any(d.sha256 == sha for d in app.documents):

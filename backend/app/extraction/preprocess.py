@@ -4,13 +4,13 @@ import io
 from dataclasses import dataclass
 
 import pypdfium2 as pdfium
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, ImageOps, UnidentifiedImageError
 
 from app.config import settings
 
 MAX_PAGES = 4
 
-ALLOWED_MIME = {"application/pdf", "image/jpeg", "image/png"}
+ALLOWED_MIME = {"application/pdf", "image/jpeg", "image/png", "image/webp"}
 
 
 class UnreadableFile(Exception):
@@ -30,10 +30,13 @@ def sniff_mime(data: bytes) -> str | None:
         return "image/jpeg"
     if data.startswith(b"\x89PNG\r\n\x1a\n"):
         return "image/png"
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "image/webp"
     return None
 
 
 def _to_jpeg(img: Image.Image) -> bytes:
+    img = ImageOps.exif_transpose(img)  # phone photos: apply the EXIF orientation, otherwise the page is sideways
     img = img.convert("RGB")
     side = settings.image_max_side  # smaller pages = far fewer vision tokens (local models on 8 GB GPUs)
     img.thumbnail((side, side))
