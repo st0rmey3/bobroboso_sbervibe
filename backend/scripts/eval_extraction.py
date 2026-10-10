@@ -5,7 +5,8 @@ Layout (data/ is git-ignored — personal data):
     data/open/<name>.json   {"doc_type": "passport_ru", "fields": {"last_name": "…", …}}
 
 Run: docker compose exec worker python scripts/eval_extraction.py data/open
-TODO(T-008): per-field accuracy table, confusion of doc types, latency; compare providers via LLM_PROVIDER.
+Prints every mismatching field and a summary line: type accuracy, field accuracy, provider/model.
+Compare providers by running it with different LLM_PROVIDER / OCR_PROVIDER.
 """
 
 import json

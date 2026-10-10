@@ -28,7 +28,7 @@
 | `extraction/prompts.py` | тексты запросов к модели | `SYSTEM`, `classify_prompt`, `extract_prompt` |
 | `extraction/preprocess.py` | файл → картинки страниц | `sniff_mime` :26, `load` :48 (PDF → страницы, поворот фото) |
 | `llm/base.py`, `llm/factory.py` | единый слой модели | `LLMProvider.complete_json`, `LLMError(retryable)`, `get_provider` |
-| `llm/openai_compat.py`, `llm/ollama.py`, `llm/gigachat.py` | провайдеры | внешний Qwen Сбера / локальная Ollama / GigaChat |
+| `llm/openai_compat.py`, `llm/ollama.py` | провайдеры | внешний Qwen Сбера / локальная Ollama |
 | `llm/ocr.py` | отдельный OCR-шаг | olmOCR, Ollama, Tesseract — `get_ocr` :136 |
 | `applications.py` | правила на уровне заявки | `doc_slots` :26 (лицо+оборот), `refresh_status` :118, `audit` :134 |
 | `crosscheck.py` | сверка ФИО/дат между документами | `same_person` :32, `cross_checks` :57 |
@@ -80,8 +80,8 @@
 ## 6. Слой модели (раздел 5.3, С19–С20, 15 баллов)
 - Интерфейс один: `LLMProvider.complete_json(system, prompt, schema, images) → LLMResponse`. Остальной код знает только
   `get_provider()` и `LLMError`. Ни в обработчиках API, ни во фронтенде вызовов модели нет.
-- Провайдеры: `openai` (Qwen3.8-27B Сбера, OpenAI-совместимый API, читает картинки), `ollama` (локально),
-  `gigachat`. Выбор — `LLM_PROVIDER` в `.env`; смена без правки кода, только `docker compose up -d backend worker`.
+- Провайдеры: `openai` (Qwen3.8-27B Сбера, OpenAI-совместимый API, читает картинки), `ollama` (локально).
+  Выбор — `LLM_PROVIDER` в `.env`; смена без правки кода, только `docker compose up -d backend worker`.
 - OCR отдельно (`OCR_PROVIDER`): `none` — модель сама читает картинку (по умолчанию); `olmocr` — olmOCR-2 Сбера;
   `ollama` — локальная модель как OCR; `tesseract` — классический OCR на процессоре + текстовая модель.
 - Промпты — в репозитории (`extraction/prompts.py`), общие для вида документа, без значений из образцов.

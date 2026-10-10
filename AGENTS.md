@@ -63,7 +63,7 @@ backend/app/api/public.py      applicant API (no login; per-application token)
 backend/app/api/operator.py    operator API (Bearer token, role operator)
 backend/app/jobs/queue.py      Postgres job queue: enqueue / claim (SKIP LOCKED + lease)
 backend/app/jobs/worker.py     worker process: claim → pipeline → retry/fail
-backend/app/llm/               model layer: LLM providers (ollama local, gigachat, openai_compat) + ocr.py (olmOCR)
+backend/app/llm/               model layer: LLM providers (openai_compat external, ollama local) + ocr.py (olmOCR / Ollama / Tesseract)
 backend/app/extraction/        doctypes.py (countries, 8 doc types, fields, rules), preprocess, prompts, pipeline
 backend/scripts/               export_openapi.py, eval_extraction.py
 frontend/src/                  React SPA: /  (applicant)   /operator/* (operator, OIDC code+PKCE via oidc-client-ts)
@@ -77,8 +77,8 @@ docs/                          criteria, spec, architecture, decisions, llm (jud
   (commits `docs/api/openapi.json`). Frontend regenerates types with `npm run gen:api`. Never hand-write types that drift.
 - **Countries, document types, fields, rules:** only in `backend/app/extraction/doctypes.py`. Frontend gets them from
   `GET /api/public/countries`. Never duplicate the list.
-- **Parsing flow:** file → page images → OCR text (`OCR_PROVIDER=olmocr`) → LLM classify → LLM extract → server
-  validation. With `OCR_PROVIDER=none` the LLM reads page images itself (local VLM in Ollama).
+- **Parsing flow:** file → page images → [OCR text if `OCR_PROVIDER` = olmocr | ollama | tesseract] → LLM classify →
+  LLM extract → server validation. With `OCR_PROVIDER=none` the LLM reads page images itself.
 - **Statuses:** enums in `backend/app/models.py`. UI labels for them live in one frontend file.
 - **Breaking a contract** (rename/remove a field, change a status): create a task for the affected owner + note in `docs/decisions.md`.
 
@@ -106,7 +106,7 @@ docs/                          criteria, spec, architecture, decisions, llm (jud
 | core | `docker-compose.yml`, `Makefile`, `backend/app/{main,config,db,models,schemas,auth,storage}.py`, `backend/app/jobs/`, `backend/app/llm/`, `keycloak/`, `coord/`, `docs/` | claude (captain) |
 | extraction | `backend/app/extraction/`, `backend/scripts/eval_extraction.py` | claude (rules) · gemini (prompt tuning, eval) |
 | backend features | `backend/app/api/`, new modules under `backend/app/` | per task |
-| local model & stand | `docs/local-model.md`, `ollama/`, stand runs | gemini |
+| local model & stand | `docs/local-model.md`, stand runs | gemini |
 | frontend | `frontend/` | codex |
 
 Outside your zone: only through a task assigned to you or an agreement in a Thread.

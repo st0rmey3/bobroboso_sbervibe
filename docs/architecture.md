@@ -17,14 +17,16 @@ flowchart LR
   L -->|OCR_PROVIDER=ollama| OL
   L -->|LLM_PROVIDER=openai| OA[Qwen3.8-27B<br/>OpenAI-совместимый API Сбера]
   L -->|LLM_PROVIDER=ollama| OL[Ollama<br/>локально]
-  L -->|LLM_PROVIDER=gigachat| GC[GigaChat API]
+  L -->|OCR_PROVIDER=tesseract| TS[Tesseract<br/>в образе backend]
 ```
 
 ## Поток обработки документа
-1. Соискатель загружает файл → бэкенд проверяет размер, **реальный тип по сигнатуре**, дубликат (sha256), принадлежность
-   к выбранному набору → сохраняет файл в том, создаёт `Document(queued)` и `Job(queued)` в одной транзакции → **202** сразу.
+1. Соискатель загружает файл (в раздел нужного вида или в «Другой документ» — тогда вид определит модель) →
+   бэкенд проверяет размер, лимиты заявки, **реальный тип по сигнатуре**, дубликат (sha256) → сохраняет файл в том,
+   создаёт `Document(queued)` и `Job(queued)` в одной транзакции → **202** сразу. Каждый отказ пишется в журнал.
 2. Воркер забирает задание `SELECT … FOR UPDATE SKIP LOCKED`, ставит аренду (`locked_until`).
-3. Стадии документа: `queued → preprocessing → extracting → validating → done | needs_review | unreadable | failed`.
+3. Стадии документа: `queued → preprocessing → (recognizing, если включён OCR) → extracting → validating →
+   done | needs_review | unreadable | failed`.
    Каждая стадия сохраняется в БД — интерфейсы показывают честный прогресс.
 4. Модель вызывается дважды: определение типа (+ читаемость) и извлечение полей по схеме типа. Затем серверная
    валидация (даты, форматы, обязательность) и итоговая уверенность по каждому полю.

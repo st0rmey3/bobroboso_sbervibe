@@ -20,14 +20,10 @@ class Settings(BaseSettings):
     operator_role: str = "operator"
 
     # LLM
-    llm_provider: str = "ollama"  # ollama | gigachat | openai
+    llm_provider: str = "openai"  # openai (any OpenAI-compatible API) | ollama (local)
     llm_timeout_s: float = 180
     ollama_url: str = "http://host.docker.internal:11434"
     ollama_model: str = "qwen2.5vl:7b"
-    gigachat_credentials: str = ""
-    gigachat_scope: str = "GIGACHAT_API_PERS"
-    gigachat_model: str = "GigaChat-2-Max"
-    gigachat_verify_ssl: bool = False
     openai_base_url: str = "https://api.openai.com/v1"
     openai_api_key: str = ""
     openai_model: str = "gpt-4o-mini"

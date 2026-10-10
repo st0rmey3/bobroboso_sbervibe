@@ -7,8 +7,7 @@
 | `LLM_PROVIDER` | Файл | Назначение |
 |---|---|---|
 | `ollama` | `llm/ollama.py` | **локальная** модель, структурированный вывод по JSON Schema |
-| `gigachat` | `llm/gigachat.py` | основная облачная (Сбер), изображения через загрузку файлов |
-| `openai` | `llm/openai_compat.py` | любой OpenAI-совместимый API (OpenAI, DeepSeek, OpenRouter, vLLM, LM Studio) |
+| `openai` | `llm/openai_compat.py` | **внешняя**: Qwen3.8-27B Сбера или любой OpenAI-совместимый API (vLLM, OpenRouter…) |
 
 Отдельный OCR-шаг (`OCR_PROVIDER`, файл `llm/ocr.py`): `olmocr` — olmOCR-2 Сбера, `ollama` — локальная модель, `tesseract` — классический OCR на процессоре,
 `none` — модель сама читает изображение.
@@ -16,28 +15,19 @@
 Переключение — только переменной окружения в `.env` и `docker compose up -d backend worker`.
 
 ## Локальный запуск
-**macOS (рекомендуется, GPU через Metal):**
-```bash
-brew install ollama && ollama serve        # или приложение Ollama
-ollama pull qwen2.5vl:7b
-# .env: LLM_PROVIDER=ollama, OLLAMA_URL=http://host.docker.internal:11434
-```
-**Linux / в Docker:**
-```bash
-make up-local-llm                          # поднимет контейнер ollama и скачает модель
-# .env: LLM_PROVIDER=ollama, OLLAMA_URL=http://ollama:11434
-```
-Требования к железу, рекомендуемые настройки и замеры — в [docs/local-model.md](local-model.md).
+Пошаговая инструкция, требования к железу, настройки для видеокарты 8 ГБ и замеры — [docs/local-model.md](local-model.md).
 
 ## Выбор модели
 - **Внешняя:** Qwen3.8-27B (выдана организаторами, OpenAI-совместимый API). Читает изображения сама, поэтому
   отдельный OCR не нужен; на открытом наборе (23 файла) верно определила все 8 видов по содержимому, среднее время
   разбора файла 8,2 с. Режим «размышления» отключён (`OPENAI_DISABLE_THINKING=true`) — в 2 раза быстрее при том же
   качестве на наших документах.
-- **Локальная:** Qwen2.5-VL через Ollama — та же семья моделей, понимает изображения, кириллицу и латиницу,
-  лицензия Apache-2.0; версия 3B помещается в 8 ГБ видеопамяти. Подробности и замеры — docs/local-model.md.
-- **OCR отдельно** (`OCR_PROVIDER`): olmOCR-2 Сбера или локальный OCR через Ollama — для случаев, когда модель
-  извлечения не умеет читать изображения.
+- **Локальная:** Ollama. На машине с достаточной видеопамятью — Qwen2.5-VL (та же семья, что внешняя модель,
+  понимает изображения, лицензия Apache-2.0). На стенде с RTX 5060 8 ГБ модели с изображениями не поместились
+  в видеопамять (буфер под картинку ~6,7 ГБ), поэтому там работает связка Tesseract (OCR на процессоре) +
+  текстовая `qwen2.5:3b` на видеокарте. Подробности и замеры — docs/local-model.md.
+- **OCR отдельно** (`OCR_PROVIDER`): olmOCR-2 Сбера, локальный OCR через Ollama или Tesseract — когда модель
+  извлечения не умеет читать изображения или не помещается в видеокарту.
 - Проверить качество на своих файлах: `python backend/scripts/acceptance_run.py <папка>` (виды и статусы)
   и `backend/scripts/eval_extraction.py` (точность полей по эталонной разметке).
 
