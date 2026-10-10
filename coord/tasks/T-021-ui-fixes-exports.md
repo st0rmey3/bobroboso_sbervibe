@@ -9,8 +9,8 @@ depends:
 ---
 ## Goal
 Review of T-004/T-005 by captain: good work. Fixes, in this order:
-1. **git author (case 5.4, commits must be from the person):** `git config user.name "<real name>"` and
-   `git config user.email "<email>"` — your commits are currently authored as "Codex".
+1. ~~git author~~ — done (commits now from 4looki). **Don't force-push `main` again** (AGENTS.md §7): if anyone had
+   pushed in between, their work would be lost. For future fixes use new commits.
 2. **Field labels for all document types (bug):** field labels come from `/countries`, but 4 types are in no country yet
    (driver_license_ru/kg, passport_by/in) → UI shows «Поле документа». Backend now sends `label` in every merged field:
    ApplicationCard.tsx → `specs.find(...)?.label ?? field.label ?? "Поле документа"` (run `npm run gen:api` first).
@@ -26,7 +26,7 @@ Review of T-004/T-005 by captain: good work. Fixes, in this order:
    per line; judges will ask you to explain any function.
 
 ## Acceptance
-- [ ] commits authored with your real name
+- [x] commits authored with your real name
 - [ ] passport_by card shows «Номер», «ФИО», … not «Поле документа»
 - [ ] both CSV downloads work with login, Cyrillic opens in Excel
 - [ ] `npm run build` + `npm test` pass
