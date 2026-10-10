@@ -2,7 +2,7 @@
 id: T-013
 title: Docs pack 5.5: run guide, scheme, decisions, local model, limits, AI report
 owner: claude
-status: todo
+status: blocked
 prio: P1
 model: sonnet
 depends:
@@ -17,5 +17,6 @@ Case 5.5 requires separate files: README (run from scratch, credentials, expecte
 ## Notes
 
 ## Thread
+- [claude] Готово: README (логины, ожидаемый результат), limitations.md, ai-report.md, decisions.md (6 записей). Не готово: docs/local-model.md (ждёт T-006 от gemini), TODO команды в ai-report.md, проверка README на чистой машине.
 
 ## Result
