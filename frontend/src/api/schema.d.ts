@@ -543,6 +543,11 @@ export interface components {
             document_ids: string[];
             /** Missing Fields */
             missing_fields: string[];
+            /**
+             * Warnings
+             * @default []
+             */
+            warnings: string[];
             /** Fields */
             fields: {
                 [key: string]: components["schemas"]["MergedField"];
@@ -565,6 +570,11 @@ export interface components {
             document_ids: string[];
             /** Missing Fields */
             missing_fields: string[];
+            /**
+             * Warnings
+             * @default []
+             */
+            warnings: string[];
         };
         /** ValidationError */
         ValidationError: {

@@ -6,7 +6,10 @@ from app.models import DocumentStatus
 
 def doc(id, fields, status=DocumentStatus.done):
     full = {k: {"value": v, "confidence": c, "issues": []} for k, (v, c) in fields.items()}
-    return SimpleNamespace(id=id, detected_type="work_patent", declared_type="work_patent", status=status, fields=full)
+    patent = "work_patent"
+    return SimpleNamespace(
+        id=id, filename=f"{id}.jpg", detected_type=patent, declared_type=patent, status=status, fields=full
+    )
 
 
 def test_front_and_back_merge_into_one_document():
@@ -32,3 +35,12 @@ def test_conflicting_values_are_flagged():
 def test_missing_document_type():
     [slot] = doc_slots(SimpleNamespace(doc_set=["inn"], documents=[]))
     assert slot["state"] == "missing"
+
+
+def test_same_document_uploaded_twice_is_flagged():
+    a = doc("a", {"series": ("77", 0.9), "number": ("2698835778", 0.9), "valid_until": ("2027-01-01", 0.9)})
+    b = doc("b", {"series": ("77", 0.9), "number": ("2698835778", 0.9)})
+    a.filename, b.filename = "patent.jpg", "patent (копия).jpg"
+    [slot] = doc_slots(SimpleNamespace(doc_set=["work_patent"], documents=[a, b]))
+    assert slot["warnings"] and "один и тот же документ" in slot["warnings"][0]
+    assert slot["state"] == "problem"

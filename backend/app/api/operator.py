@@ -9,6 +9,7 @@ from app import storage
 from app.applications import audit, doc_slots, missing_types, refresh_status
 from app.auth import Operator, require_operator
 from app.db import get_session
+from app.extraction.doctypes import DOC_TYPES, validate
 from app.jobs import queue
 from app.models import Application, ApplicationStatus, AuditEvent, Document, DocumentStatus, Job, JobStatus
 from app.schemas import (
@@ -114,13 +115,19 @@ def update_fields(
     session: Session = Depends(get_session),
 ) -> DocumentOperator:
     doc = _doc(session, doc_id)
+    dt = DOC_TYPES.get(doc.detected_type) or DOC_TYPES.get(doc.declared_type)
+    if dt is None:
+        raise HTTPException(422, "Вид документа не определён — правка полей невозможна")
+    known = {f.name for f in dt.fields}
     fields = dict(doc.fields)
     changes = {}
     for name, value in body.fields.items():
-        if name not in fields:
+        if name not in known:
             raise HTTPException(422, f"Неизвестное поле: {name}")
-        changes[name] = {"old": fields[name].get("value"), "new": value}
-        fields[name] = {"value": value, "confidence": 1.0, "issues": [], "edited_by": op.username}
+        # operator edits go through the same server-side rules (format, expiry) as model output
+        checked = validate(dt, {name: {"value": value, "confidence": 1.0}})[name]
+        changes[name] = {"old": (fields.get(name) or {}).get("value"), "new": checked["value"]}
+        fields[name] = {**checked, "edited_by": op.username}
     doc.fields = fields  # reassign so SQLAlchemy sees the JSON change
     audit(session, doc.application_id, f"operator:{op.username}", "fields_edited", doc.id, changes=changes)
     session.commit()

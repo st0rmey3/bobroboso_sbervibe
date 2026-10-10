@@ -49,12 +49,13 @@ def doc_slots(app: Application) -> list[dict]:
                 best = {**best, "issues": [*best["issues"], "В файлах разные значения: " + " / ".join(sorted(values))]}
             merged[spec.name] = best
         missing = missing_required(dt, merged) if parsed else []
+        warnings = _duplicate_warnings(parsed)
         has_issues = any(f["issues"] for f in merged.values())
         if not files:
             state = "missing"
         elif any(d.status in _IN_PROGRESS for d in files):
             state = "processing"
-        elif not parsed or missing or has_issues or any(d.status in _ATTENTION for d in files):
+        elif not parsed or missing or has_issues or warnings or any(d.status in _ATTENTION for d in files):
             state = "problem"
         else:
             state = "ok"
@@ -67,9 +68,29 @@ def doc_slots(app: Application) -> list[dict]:
                 "document_ids": [d.id for d in files],
                 "fields": merged,
                 "missing_fields": missing,
+                "warnings": warnings,
             }
         )
     return slots
+
+
+_IDENTITY_FIELDS = ("series", "number")
+
+
+def _duplicate_warnings(parsed: list) -> list[str]:
+    """Same document uploaded twice as different files (re-saved photo, copy): same series+number."""
+    seen: dict[tuple, str] = {}
+    warnings = []
+    for d in parsed:
+        key = tuple((d.fields or {}).get(f, {}).get("value") for f in _IDENTITY_FIELDS)
+        if not any(key):
+            continue
+        if key in seen:
+            number = " ".join(v for v in key if v)
+            warnings.append(f"Файлы «{seen[key]}» и «{d.filename}» — один и тот же документ (№ {number})")
+        else:
+            seen[key] = d.filename
+    return warnings
 
 
 def missing_types(app: Application) -> list[str]:

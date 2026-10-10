@@ -52,6 +52,7 @@ class SlotPublic(BaseModel):
     state: str  # missing | processing | ok | problem
     document_ids: list[str]
     missing_fields: list[str]  # labels of minimum fields not found across all files
+    warnings: list[str] = []  # e.g. the same document uploaded twice as different files
 
 
 class MergedField(ExtractedField):
