@@ -27,7 +27,10 @@ def main() -> None:
     ap.add_argument("--api", default="http://localhost:8000")
     ap.add_argument("--country", default="RU")
     args = ap.parse_args()
-    files = sorted(p for p in Path(args.folder).rglob("*") if p.is_file() and not p.name.startswith("."))
+    folder = Path(args.folder).resolve()
+    files = sorted(p for p in folder.rglob("*") if p.is_file() and not p.name.startswith("."))
+    if not files:
+        raise SystemExit(f"В папке нет файлов: {folder}\nСкопируйте туда тестовые документы (папка не хранится в git).")
     # trust_env=False: talk to the stand directly. On Windows httpx picks up the system proxy from the registry,
     # and a venue proxy answers 503 for localhost.
     c = httpx.Client(base_url=args.api, timeout=60, trust_env=False)
