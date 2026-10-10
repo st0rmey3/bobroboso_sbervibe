@@ -93,7 +93,7 @@ test("one explicit batch submits selected slots and untyped files and shows the 
     expect(route.request().headers()["x-application-token"]).toBe("synthetic-applicant-token");
     const body = route.request().postData()!;
     requests.push(body);
-    const other = body.includes("belarus.pdf");
+    const other = body.includes("belarus.webp");
     if (other) expect(body).not.toContain('name="declared_type"');
     else {
       expect(body).toContain('name="declared_type"');
@@ -102,7 +102,7 @@ test("one explicit batch submits selected slots and untyped files and shows the 
     await uploadGate;
     await route.fulfill({
       status: 202,
-      json: addDocument(app, other ? "belarus.pdf" : "passport.pdf", other ? null : "passport_ru"),
+      json: addDocument(app, other ? "belarus.webp" : "passport.pdf", other ? null : "passport_ru"),
     });
   });
   await serve(page, app, () => {
@@ -120,7 +120,11 @@ test("one explicit batch submits selected slots and untyped files and shows the 
   await expect(page.getByRole("button", { name: "Отправить комплект", exact: true })).toBeDisabled();
   await page.getByLabel("Добавить файлы: Паспорт РФ").setInputFiles([file("passport.pdf"), file("remove.pdf")]);
   await page.getByRole("button", { name: "Убрать файл: remove.pdf", exact: true }).click();
-  await page.getByLabel("Добавить файлы: Другой документ").setInputFiles(file("belarus.pdf"));
+  await page.getByLabel("Добавить файлы: Другой документ").setInputFiles({
+    name: "belarus.webp",
+    mimeType: "image/webp",
+    buffer: Buffer.from("RIFF synthetic WEBP browser test only"),
+  });
   expect(requests).toHaveLength(0);
   await expect(page.getByText("К отправке: 2.", { exact: false })).toBeVisible();
   await page.screenshot({ path: "test-results/applicant-selected-mobile.png", fullPage: true });

@@ -26,7 +26,7 @@ Gap: open-set kinds (ВУ РФ/Киргизии, паспорт Беларуси
 
 ## Result
 - Added untyped multi-file selection plus one explicit batch submit, truthful full/partial acceptance receipts with application number, per-file errors, removal, and retry of refused files only.
-- New document slots come from the API; file_viewed is labelled «Открыт оригинал» with its filename in operator history.
+- New document slots come from the API; file_viewed is labelled «Открыт оригинал» with its filename in operator history. File inputs/hints include WEBP per the backend update.
 - Verified API generation, production build and all 22 browser tests, including 375px layout, detected passport_by slot, closed-application race and no duplicate submission; screenshots inspected.
 - Browser responses/tokens are synthetic test fixtures only; no live model/Keycloak verification was performed and no production stubs were added.
 - Updated frontend/README.md and coord/defense.md for the new submit flow. T-023 remains untouched.

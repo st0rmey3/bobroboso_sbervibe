@@ -395,7 +395,7 @@ function FilePicker({
             className="file-input"
             type="file"
             multiple
-            accept=".pdf,.jpg,.jpeg,.png"
+            accept=".pdf,.jpg,.jpeg,.png,.webp"
             aria-label={`Добавить файлы: ${label}`}
             disabled={busy}
             onChange={(event) => {
@@ -406,7 +406,7 @@ function FilePicker({
           />
         </label>
       )}
-      <p className="muted small">PDF, JPG или PNG. Для разворотов выберите несколько файлов.</p>
+      <p className="muted small">PDF, JPG, PNG или WEBP. Для разворотов выберите несколько файлов.</p>
     </>
   );
 }
