@@ -733,6 +733,13 @@
             "format": "date-time",
             "title": "Created At"
           },
+          "slots": {
+            "items": {
+              "$ref": "#/components/schemas/SlotOperator"
+            },
+            "type": "array",
+            "title": "Slots"
+          },
           "documents": {
             "items": {
               "$ref": "#/components/schemas/DocumentOperator"
@@ -764,6 +771,7 @@
           "country",
           "doc_set",
           "created_at",
+          "slots",
           "documents",
           "missing",
           "history"
@@ -794,6 +802,13 @@
             "type": "array",
             "title": "Doc Set"
           },
+          "slots": {
+            "items": {
+              "$ref": "#/components/schemas/SlotPublic"
+            },
+            "type": "array",
+            "title": "Slots"
+          },
           "documents": {
             "items": {
               "$ref": "#/components/schemas/DocumentPublic"
@@ -816,6 +831,7 @@
           "full_name",
           "country",
           "doc_set",
+          "slots",
           "documents",
           "missing"
         ],
@@ -1156,6 +1172,17 @@
             "type": "array",
             "title": "Issues",
             "default": []
+          },
+          "edited_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Edited By"
           }
         },
         "type": "object",
@@ -1244,6 +1271,62 @@
           "roles"
         ],
         "title": "Me"
+      },
+      "MergedField": {
+        "properties": {
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence"
+          },
+          "issues": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Issues",
+            "default": []
+          },
+          "edited_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Edited By"
+          },
+          "document_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "value",
+          "confidence",
+          "document_id"
+        ],
+        "title": "MergedField"
       },
       "ProcessingItem": {
         "properties": {
@@ -1345,6 +1428,103 @@
           "avg_processing_ms"
         ],
         "title": "QueueStats"
+      },
+      "SlotOperator": {
+        "properties": {
+          "doc_type": {
+            "type": "string",
+            "title": "Doc Type"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          },
+          "document_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Document Ids"
+          },
+          "missing_fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing Fields"
+          },
+          "fields": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MergedField"
+            },
+            "type": "object",
+            "title": "Fields"
+          }
+        },
+        "type": "object",
+        "required": [
+          "doc_type",
+          "label",
+          "required",
+          "state",
+          "document_ids",
+          "missing_fields",
+          "fields"
+        ],
+        "title": "SlotOperator"
+      },
+      "SlotPublic": {
+        "properties": {
+          "doc_type": {
+            "type": "string",
+            "title": "Doc Type"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "required": {
+            "type": "boolean",
+            "title": "Required"
+          },
+          "state": {
+            "type": "string",
+            "title": "State"
+          },
+          "document_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Document Ids"
+          },
+          "missing_fields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Missing Fields"
+          }
+        },
+        "type": "object",
+        "required": [
+          "doc_type",
+          "label",
+          "required",
+          "state",
+          "document_ids",
+          "missing_fields"
+        ],
+        "title": "SlotPublic",
+        "description": "One document type in the application (may consist of several files)."
       },
       "ValidationError": {
         "properties": {

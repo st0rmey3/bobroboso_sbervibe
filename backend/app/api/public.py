@@ -11,7 +11,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import storage
-from app.applications import audit, missing_types, refresh_status
+from app.applications import audit, doc_slots, missing_types, refresh_status
 from app.config import settings
 from app.db import get_session
 from app.extraction.doctypes import COUNTRIES, DOC_TYPES
@@ -26,6 +26,7 @@ from app.schemas import (
     DocTypeOut,
     DocumentPublic,
     FieldSpecOut,
+    SlotPublic,
 )
 
 router = APIRouter(prefix="/api/public", tags=["applicant"])
@@ -57,6 +58,7 @@ def _public(app: Application) -> ApplicationPublic:
         full_name=app.full_name,
         country=app.country,
         doc_set=app.doc_set,
+        slots=[SlotPublic.model_validate(s) for s in doc_slots(app)],
         documents=[DocumentPublic.model_validate(d) for d in app.documents],
         missing=missing_types(app),
     )
@@ -124,8 +126,8 @@ def upload_document(
     name = (file.filename or "file")[:255]
     if app.status in (ApplicationStatus.accepted, ApplicationStatus.rejected):
         raise _reject(session, app, 409, "Заявка уже рассмотрена, загрузка закрыта", filename=name)
-    if declared_type not in app.doc_set:
-        raise _reject(session, app, 422, "Этот вид документа не нужен для выбранной страны", filename=name)
+    if declared_type not in DOC_TYPES:
+        raise _reject(session, app, 422, "Неизвестный вид документа", filename=name)
     if len(app.documents) >= settings.max_files_per_application:
         raise _reject(session, app, 413, f"В заявке уже {settings.max_files_per_application} файлов — это максимум")
 

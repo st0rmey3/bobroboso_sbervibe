@@ -6,7 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app import storage
-from app.applications import audit, missing_types, refresh_status
+from app.applications import audit, doc_slots, missing_types, refresh_status
 from app.auth import Operator, require_operator
 from app.db import get_session
 from app.jobs import queue
@@ -20,6 +20,7 @@ from app.schemas import (
     Me,
     ProcessingItem,
     QueueStats,
+    SlotOperator,
 )
 
 IN_PROGRESS = [
@@ -92,6 +93,7 @@ def get_application(app_id: str, session: Session = Depends(get_session)) -> App
         country=app.country,
         doc_set=app.doc_set,
         created_at=app.created_at,
+        slots=[SlotOperator.model_validate(s) for s in doc_slots(app)],
         documents=[DocumentOperator.model_validate(d) for d in app.documents],
         missing=missing_types(app),
         history=[AuditEventOut.model_validate(e) for e in history],

@@ -40,6 +40,26 @@ class ExtractedField(BaseModel):
     value: str | None
     confidence: float
     issues: list[str] = []
+    edited_by: str | None = None  # operator username if corrected by hand
+
+
+class SlotPublic(BaseModel):
+    """One document type in the application (may consist of several files)."""
+
+    doc_type: str
+    label: str
+    required: bool
+    state: str  # missing | processing | ok | problem
+    document_ids: list[str]
+    missing_fields: list[str]  # labels of minimum fields not found across all files
+
+
+class MergedField(ExtractedField):
+    document_id: str | None  # file the value came from (edit goes there)
+
+
+class SlotOperator(SlotPublic):
+    fields: dict[str, MergedField]
 
 
 class DocumentPublic(BaseModel):
@@ -61,6 +81,7 @@ class ApplicationPublic(BaseModel):
     full_name: str
     country: str
     doc_set: list[str]
+    slots: list[SlotPublic]
     documents: list[DocumentPublic]
     missing: list[str]  # doc type codes from doc_set without a usable document
 
@@ -108,6 +129,7 @@ class ApplicationOperator(BaseModel):
     country: str
     doc_set: list[str]
     created_at: datetime
+    slots: list[SlotOperator]
     documents: list[DocumentOperator]
     missing: list[str]
     history: list[AuditEventOut]

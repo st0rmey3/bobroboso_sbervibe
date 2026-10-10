@@ -2,6 +2,7 @@
 
 from sqlalchemy.orm import Session
 
+from app.extraction.doctypes import DOC_TYPES, missing_required
 from app.models import Application, ApplicationStatus, AuditEvent, DocumentStatus
 
 _USABLE = {DocumentStatus.done, DocumentStatus.needs_review}
@@ -14,9 +15,66 @@ _IN_PROGRESS = {
 }
 
 
+_ATTENTION = {DocumentStatus.unreadable, DocumentStatus.failed}
+
+
+def _type_of(doc) -> str | None:
+    return doc.detected_type if doc.detected_type in DOC_TYPES else doc.declared_type
+
+
+def doc_slots(app: Application) -> list[dict]:
+    """One entry per document type: its files (e.g. front + back) and fields merged across them.
+
+    For each field the most reliable value wins: operator edit first, then the highest model confidence.
+    The case's minimum-field check is done here, on the merged document, not per file.
+    """
+    extra = sorted({t for d in app.documents if (t := _type_of(d)) in DOC_TYPES and t not in app.doc_set})
+    slots = []
+    for code in [*app.doc_set, *extra]:
+        dt = DOC_TYPES[code]
+        files = [d for d in app.documents if _type_of(d) == code]
+        parsed = [d for d in files if d.status in _USABLE]
+        merged = {}
+        for spec in dt.fields:
+            candidates = [
+                {**d.fields[spec.name], "document_id": d.id}
+                for d in parsed
+                if (d.fields or {}).get(spec.name, {}).get("value")
+            ]
+            best = max(candidates, key=lambda c: (bool(c.get("edited_by")), c["confidence"]), default=None)
+            if best is None:
+                best = {"value": None, "confidence": 0.0, "issues": [], "document_id": None}
+            values = {c["value"] for c in candidates}
+            if len(values) > 1 and not best.get("edited_by"):
+                best = {**best, "issues": [*best["issues"], "В файлах разные значения: " + " / ".join(sorted(values))]}
+            merged[spec.name] = best
+        missing = missing_required(dt, merged) if parsed else []
+        has_issues = any(f["issues"] for f in merged.values())
+        if not files:
+            state = "missing"
+        elif any(d.status in _IN_PROGRESS for d in files):
+            state = "processing"
+        elif not parsed or missing or has_issues or any(d.status in _ATTENTION for d in files):
+            state = "problem"
+        else:
+            state = "ok"
+        slots.append(
+            {
+                "doc_type": code,
+                "label": dt.label,
+                "required": code in app.doc_set,
+                "state": state,
+                "document_ids": [d.id for d in files],
+                "fields": merged,
+                "missing_fields": missing,
+            }
+        )
+    return slots
+
+
 def missing_types(app: Application) -> list[str]:
     """Doc types from the required set that have no usable document yet (bonus: ask applicant to upload)."""
-    have = {d.detected_type or d.declared_type for d in app.documents if d.status in _USABLE | _IN_PROGRESS}
+    have = {_type_of(d) for d in app.documents if d.status in _USABLE | _IN_PROGRESS}
     return [code for code in app.doc_set if code not in have]
 
 
