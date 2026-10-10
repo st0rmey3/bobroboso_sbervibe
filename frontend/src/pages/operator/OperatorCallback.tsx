@@ -10,11 +10,25 @@ export default function OperatorCallback() {
   const [error, setError] = useState(false);
   useEffect(() => {
     callback ??= userManager.signinRedirectCallback();
-    callback.then((user) => {
-      const destination = typeof user.state === "string" && user.state.startsWith("/operator/") && !user.state.startsWith("/operator/callback") ? user.state : "/operator";
-      navigate(destination, { replace: true });
-    }).catch(() => setError(true));
+    callback
+      .then((user) => {
+        const destination =
+          typeof user.state === "string" &&
+          user.state.startsWith("/operator/") &&
+          !user.state.startsWith("/operator/callback")
+            ? user.state
+            : "/operator";
+        navigate(destination, { replace: true });
+      })
+      .catch(() => setError(true));
   }, [navigate]);
-  if (error) return <main className="applicant-container"><h1>Не удалось завершить вход</h1><p>Попробуйте войти ещё раз.</p><Link to="/operator">Вернуться к входу</Link></main>;
+  if (error)
+    return (
+      <main className="applicant-container">
+        <h1>Не удалось завершить вход</h1>
+        <p>Попробуйте войти ещё раз.</p>
+        <Link to="/operator">Вернуться к входу</Link>
+      </main>
+    );
   return <p>Входим…</p>;
 }

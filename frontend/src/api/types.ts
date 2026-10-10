@@ -10,3 +10,4 @@ export type SlotOperator = components["schemas"]["SlotOperator"];
 export type MergedField = components["schemas"]["MergedField"];
 export type ProcessingItem = components["schemas"]["ProcessingItem"];
 export type QueueStats = components["schemas"]["QueueStats"];
+export type ExpiringItem = components["schemas"]["ExpiringItem"];

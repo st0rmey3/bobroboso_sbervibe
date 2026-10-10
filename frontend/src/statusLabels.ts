@@ -20,7 +20,12 @@ export const applicationStatusLabel: Record<string, string> = {
   rejected: "Отклонена",
 };
 
-export const slotStateLabel: Record<string, string> = { missing: "Нужно добавить", processing: "В обработке", ok: "Комплект готов", problem: "Требует внимания" };
+export const slotStateLabel: Record<string, string> = {
+  missing: "Нужно добавить",
+  processing: "В обработке",
+  ok: "Комплект готов",
+  problem: "Требует внимания",
+};
 
 export function isProcessing(status: string) {
   return ["queued", "preprocessing", "recognizing", "extracting", "validating"].includes(status);

@@ -2,8 +2,7 @@ import { UserManager, WebStorageStateStore } from "oidc-client-ts";
 
 // Keycloak realm "docs", public client "operator-ui", Authorization Code + PKCE.
 // PKCE needs a secure context: open the stand via http://localhost or https (not a bare IP over http).
-const authority =
-  import.meta.env.VITE_OIDC_AUTHORITY ?? `${location.protocol}//${location.hostname}:8080/realms/docs`;
+const authority = import.meta.env.VITE_OIDC_AUTHORITY ?? `${location.protocol}//${location.hostname}:8080/realms/docs`;
 
 export const userManager = new UserManager({
   authority,

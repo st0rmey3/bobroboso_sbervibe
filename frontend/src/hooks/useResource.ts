@@ -2,7 +2,11 @@ import { useCallback, useEffect, useState } from "react";
 import { errorMessage } from "../api/client";
 
 // Fetch serially, discard results after navigation, and retry interrupted polling.
-export function useResource<T>(load: (signal: AbortSignal) => Promise<T>, interval = 0, shouldPoll?: (data: T) => boolean) {
+export function useResource<T>(
+  load: (signal: AbortSignal) => Promise<T>,
+  interval = 0,
+  shouldPoll?: (data: T) => boolean,
+) {
   const [data, setData] = useState<T>();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -30,7 +34,10 @@ export function useResource<T>(load: (signal: AbortSignal) => Promise<T>, interv
       }
     }
     void refresh();
-    return () => { controller.abort(); clearTimeout(timer); };
+    return () => {
+      controller.abort();
+      clearTimeout(timer);
+    };
   }, [load, interval, shouldPoll, revision]);
   return { data, error, loading, reload };
 }

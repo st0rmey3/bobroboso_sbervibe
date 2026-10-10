@@ -2,7 +2,7 @@
 id: T-021
 title: UI review fixes + operator exports (expiring list, card CSV) + readable code
 owner: codex
-status: doing
+status: review
 prio: P0
 model: codex
 depends:
@@ -27,11 +27,16 @@ Review of T-004/T-005 by captain: good work. Fixes, in this order:
 
 ## Acceptance
 - [x] commits authored with your real name
-- [ ] passport_by card shows «Номер», «ФИО», … not «Поле документа»
+- [x] passport_by card shows «Номер», «ФИО», … not «Поле документа»
 - [ ] both CSV downloads work with login, Cyrillic opens in Excel
-- [ ] `npm run build` + `npm test` pass
+- [x] `npm run build` + `npm test` pass
 
 ## Thread
 - [codex] Taking T-021 per user request: server-provided field labels, authenticated CSV exports, expiry view, readable JSX, and browser regressions. Commits remain on main under 4looki.
 
 ## Result
+- Added server field-label fallback, authenticated card/expiry CSV downloads, expiry periods and overdue states, and the Russian processing reason heading.
+- Applied Prettier (printWidth 120); generated API types remain excluded. Commits use 4looki on main.
+- Verified: API generation, production build, format check, diff check, and all 14 browser tests pass; card and expiry screenshots inspected.
+- Browser tests verify Bearer headers, exact CSV BOM/Cyrillic bytes, filenames, period changes, and error/session handling using synthetic API responses only.
+- Remaining acceptance check: real Keycloak/backend login and opening both CSV files in Excel on the stand; these were not available locally.
