@@ -211,6 +211,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/operator/expiring": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Expiring */
+        get: operations["expiring_api_operator_expiring_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/operator/expiring.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Expiring Export */
+        get: operations["expiring_export_api_operator_expiring_csv_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/operator/applications/{app_id}/export.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Export Card */
+        get: operations["export_card_api_operator_applications__app_id__export_csv_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/health": {
         parameters: {
             query?: never;
@@ -432,6 +483,26 @@ export interface components {
          * @enum {string}
          */
         DocumentStatus: "queued" | "preprocessing" | "recognizing" | "extracting" | "validating" | "done" | "needs_review" | "unreadable" | "failed";
+        /** ExpiringItem */
+        ExpiringItem: {
+            /** Application Id */
+            application_id: string;
+            /** Full Name */
+            full_name: string;
+            /** Doc Type */
+            doc_type: string;
+            /** Doc Label */
+            doc_label: string;
+            /** Field */
+            field: string;
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** Days Left */
+            days_left: number;
+        };
         /** ExtractedField */
         ExtractedField: {
             /** Value */
@@ -938,6 +1009,99 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["QueueStats"];
+                };
+            };
+        };
+    };
+    expiring_api_operator_expiring_get: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExpiringItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    expiring_export_api_operator_expiring_csv_get: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    export_card_api_operator_applications__app_id__export_csv_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                app_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

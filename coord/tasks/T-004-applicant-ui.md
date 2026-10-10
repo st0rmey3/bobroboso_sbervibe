@@ -2,7 +2,7 @@
 id: T-004
 title: Applicant UI: country, doc checklist, multi-file upload, live status, re-upload
 owner: codex
-status: doing
+status: review
 prio: P0
 model: codex
 depends:
@@ -35,8 +35,8 @@ No technical codes or English errors in the UI. Design simple and clear; mobile 
 - [ ] several files per document type; same file twice → server message shown
 - [ ] statuses move queued → … → done/needs_review/unreadable without page reload
 - [ ] reload page → application restored; re-upload into the same application works
-- [ ] usable on a 375 px wide screen
-- [ ] `npm run build` passes
+- [x] usable on a 375 px wide screen
+- [x] `npm run build` passes
 
 ## Notes
 Backend without Docker: see AGENTS.md §9 "Dev without Docker" (SQLite). Real parsing needs LLM settings in `.env` —
@@ -47,3 +47,7 @@ fine for UI work.
 - [codex] Implementing the applicant UI against generated API types; verification includes build and mobile layout.
 
 ## Result
+Implemented country-dependent checklist, parallel multi-file uploads, per-file refusals, missing-document prompts, polling and same-application re-upload/restoration.
+Uses generated API types; country/type lists and validation remain on the server. No production mocks.
+Verify: `cd frontend && npm ci && npm run build && npx playwright install chromium && npm test` (6 browser checks passed).
+Mobile screenshot at 375 px inspected. Real worker/model processing still needs verification on the stand.

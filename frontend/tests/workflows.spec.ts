@@ -103,6 +103,19 @@ async function operatorSession(page: Page) {
   })));
 }
 
+test("operator without a session redirects to Keycloak using PKCE", async ({ page }) => {
+  await page.route("**/realms/docs/.well-known/openid-configuration", (route) => route.fulfill({ json: {
+    issuer: "http://localhost:8080/realms/docs", authorization_endpoint: "http://localhost:8080/realms/docs/protocol/openid-connect/auth", token_endpoint: "http://localhost:8080/realms/docs/protocol/openid-connect/token",
+  } }));
+  await page.route("**/realms/docs/protocol/openid-connect/auth?*", (route) => route.fulfill({ contentType: "text/html", body: "<h1>Вход для оператора</h1>" }));
+  await page.goto("/operator/applications/test-application");
+  await expect(page).toHaveURL(/localhost:8080\/realms\/docs\/protocol\/openid-connect\/auth/);
+  const url = new URL(page.url());
+  expect(url.searchParams.get("client_id")).toBe("operator-ui");
+  expect(url.searchParams.get("code_challenge_method")).toBe("S256");
+  expect(url.searchParams.get("redirect_uri")).toBe("http://localhost:5173/operator/callback");
+});
+
 test("operator compares original, saves to source document and requests reprocessing", async ({ page }) => {
   await operatorSession(page);
   await page.setViewportSize({ width: 1440, height: 1000 });

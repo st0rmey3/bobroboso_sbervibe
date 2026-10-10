@@ -2,7 +2,7 @@
 id: T-005
 title: Operator workplace: list+filters, card with original next to fields, edit, reprocess, in-progress view
 owner: codex
-status: doing
+status: review
 prio: P0
 model: codex
 depends:
@@ -40,7 +40,7 @@ No mock data anywhere — only server data (disqualification otherwise).
 - [ ] original and recognized fields side by side; edit persists and is marked as operator's edit
 - [ ] reprocess moves the file back to the queue and the card updates by itself
 - [ ] in-progress screen reflects reality while documents are being parsed
-- [ ] `npm run build` passes
+- [x] `npm run build` passes
 
 ## Notes
 Same dev setup as T-004, plus `docker compose up -d keycloak` (login `operator` / OPERATOR_PASSWORD from `.env`). Statuses' Russian labels — only in `src/statusLabels.ts`.
@@ -49,3 +49,7 @@ Same dev setup as T-004, plus `docker compose up -d keycloak` (login `operator` 
 - [codex] Implementing the operator workplace against existing OIDC and server APIs; no contract changes planned.
 
 ## Result
+Implemented list/filters, original-and-fields card, source-document edits, low-confidence marks, authenticated blob previews, reprocess, OCR/history and live queue/stats.
+Fixed duplicate OIDC code exchange under React StrictMode; login failures have a recovery screen. Server authorization is unchanged.
+Verify: `cd frontend && npm run build && npm test` (6 browser checks passed, including PKCE redirect, edit persistence and queue requests).
+Desktop screenshot inspected. Tests use synthetic API responses; live Keycloak/worker/model E2E remains a stand check. See frontend/README.md for defense notes.

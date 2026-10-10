@@ -17,7 +17,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (!res.ok) {
     const body = await res.json().catch(() => null);
     // backend returns Russian, user-facing messages in `detail`
-    const detail = typeof body?.detail === "string" ? body.detail : `Ошибка ${res.status}`;
+    const detail = typeof body?.detail === "string" ? body.detail : "Не удалось выполнить запрос. Проверьте данные и попробуйте ещё раз.";
     throw new ApiError(res.status, detail);
   }
   return res.status === 204 ? (undefined as T) : res.json();

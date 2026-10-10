@@ -20,7 +20,7 @@ export default function ApplicantPage() {
       <h1>{appId ? "Ваш комплект документов" : "Подайте документы онлайн"}</h1>
       <p className="intro">Загрузите фотографии или сканы. Мы прочитаем документы и передадим их оператору на проверку.</p>
       {countries.error && <div className="notice error" role="alert">{countries.error} <button onClick={countries.reload}>Повторить</button></div>}
-      {appId ? <Application key={appId} id={appId} countries={countries.data ?? []} /> : countries.data ? <CreateApplication countries={countries.data} onCreate={(id) => setParams({ a: id })} /> : countries.loading && <p role="status">Загружаем список стран…</p>}
+      {appId ? applicantToken.get(appId) ? <Application key={appId} id={appId} countries={countries.data ?? []} /> : <div className="notice error" role="alert">На этом устройстве нет доступа к заявке. Откройте её в браузере, где вы подавали документы. <Link to="/">Подать новую заявку</Link></div> : countries.data ? <CreateApplication countries={countries.data} onCreate={(id) => setParams({ a: id })} /> : countries.loading && <p role="status">Загружаем список стран…</p>}
     </main>
   </>;
 }
@@ -62,7 +62,6 @@ function Application({ id, countries }: { id: string; countries: Country[] }) {
   const load = useCallback((signal: AbortSignal) => publicApi<ApplicationPublic>(`/applications/${id}`, id, { signal }), [id]);
   const resource = useResource(load, 2000, needsPolling);
   const [accepted, setAccepted] = useState(0);
-  if (!applicantToken.get(id)) return <div className="notice error" role="alert">На этом устройстве нет доступа к заявке. Откройте её в браузере, где вы подавали документы. <Link to="/">Подать новую заявку</Link></div>;
   const app = resource.data;
   if (!app) return resource.error ? <div className="notice error" role="alert">{resource.error} <button onClick={resource.reload}>Повторить</button></div> : <p role="status">Открываем заявку…</p>;
   const closed = app.status === "accepted" || app.status === "rejected";
