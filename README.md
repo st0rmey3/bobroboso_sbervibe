@@ -42,7 +42,7 @@ make up                       # db, keycloak, backend, worker, frontend
 ## Документация
 - [Архитектура и схема](docs/architecture.md)
 - [Журнал решений](docs/decisions.md)
-- [Работа с моделью и локальный запуск](docs/llm.md)
+- [Работа с моделью](docs/llm.md) · [Переход на локальную модель](docs/local-model.md)
 - [Ограничения и планы](docs/limitations.md)
 - [Отчёт об использовании ИИ-ассистентов](docs/ai-report.md)
 - [Вопросы кейсодержателю](docs/case/questions.md)
