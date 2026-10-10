@@ -28,10 +28,13 @@ def main() -> None:
     ap.add_argument("--country", default="RU")
     args = ap.parse_args()
     files = sorted(p for p in Path(args.folder).rglob("*") if p.is_file() and not p.name.startswith("."))
-    c = httpx.Client(base_url=args.api, timeout=60)
+    # trust_env=False: talk to the stand directly. On Windows httpx picks up the system proxy from the registry,
+    # and a venue proxy answers 503 for localhost.
+    c = httpx.Client(base_url=args.api, timeout=60, trust_env=False)
 
     created = c.post("/api/public/applications", json={"full_name": "Приёмочный прогон", "country": args.country})
-    created.raise_for_status()
+    if created.status_code != 201:
+        raise SystemExit(f"Не удалось создать заявку: HTTP {created.status_code} {created.text[:200]}")
     app_id, headers = created.json()["id"], {"X-Application-Token": created.json()["token"]}
 
     def upload(path: Path) -> tuple[str, int, float, str]:
