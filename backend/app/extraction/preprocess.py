@@ -6,8 +6,9 @@ from dataclasses import dataclass
 import pypdfium2 as pdfium
 from PIL import Image, UnidentifiedImageError
 
+from app.config import settings
+
 MAX_PAGES = 4
-MAX_SIDE = 1800
 
 ALLOWED_MIME = {"application/pdf", "image/jpeg", "image/png"}
 
@@ -34,7 +35,8 @@ def sniff_mime(data: bytes) -> str | None:
 
 def _to_jpeg(img: Image.Image) -> bytes:
     img = img.convert("RGB")
-    img.thumbnail((MAX_SIDE, MAX_SIDE))
+    side = settings.image_max_side  # smaller pages = far fewer vision tokens (local models on 8 GB GPUs)
+    img.thumbnail((side, side))
     buf = io.BytesIO()
     img.save(buf, "JPEG", quality=88)
     return buf.getvalue()

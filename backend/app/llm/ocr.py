@@ -96,6 +96,7 @@ class OllamaOcrProvider(OcrProvider):
             "model": self.model,
             "stream": False,
             "options": {"temperature": 0},
+            "keep_alive": "30m",
             "messages": [{"role": "user", "content": LOCAL_OCR_PROMPT, "images": [base64.b64encode(image).decode()]}],
         }
         try:

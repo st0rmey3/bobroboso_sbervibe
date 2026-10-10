@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     database_url: str = "postgresql+psycopg://app:app@localhost:5432/app"
     storage_dir: str = "/data/files"
     max_upload_mb: int = 20
+    image_max_side: int = 1800  # px sent to the model; 1024 recommended for a local model on 8 GB
     max_files_per_application: int = 40
     max_application_mb: int = 200
 

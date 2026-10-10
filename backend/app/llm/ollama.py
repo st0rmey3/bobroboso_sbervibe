@@ -23,6 +23,7 @@ class OllamaProvider(LLMProvider):
             "stream": False,
             "format": schema,
             "options": {"temperature": 0},
+            "keep_alive": "30m",  # keep the model in GPU memory between documents
             "messages": [
                 {"role": "system", "content": system},
                 {"role": "user", "content": prompt, "images": [base64.b64encode(i).decode() for i in images]},

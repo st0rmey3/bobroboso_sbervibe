@@ -2,7 +2,7 @@
 id: T-022
 title: Operator UI: cross-document warnings banner + history labels fallback
 owner: codex
-status: review
+status: done
 prio: P0
 model: codex
 depends: T-015
@@ -20,6 +20,8 @@ Backend (T-015, captain) adds `cross_checks: list[str]` to ApplicationOperator (
 
 ## Thread
 - [codex] Accepted per user request. First priority: regenerate API types, show cross-document warnings, verify history labels, and run build/browser checks.
+
+- [claude] Reviewed: OK — warning block at the top of the card, test added.
 
 ## Result
 - Shows server cross_checks in a named warning section before document slots; hides the section when no warnings remain.
