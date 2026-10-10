@@ -1,7 +1,9 @@
 """Operator API. Every route requires a Keycloak token with role `operator` (router-level dependency)."""
 
+from urllib.parse import quote
+
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, Response
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -9,6 +11,7 @@ from app import storage
 from app.applications import audit, doc_slots, missing_types, refresh_status
 from app.auth import Operator, require_operator
 from app.db import get_session
+from app.exports import card_csv, expiring_csv, expiring_rows
 from app.extraction.doctypes import DOC_TYPES, validate
 from app.jobs import queue
 from app.models import Application, ApplicationStatus, AuditEvent, Document, DocumentStatus, Job, JobStatus
@@ -17,6 +20,7 @@ from app.schemas import (
     ApplicationOperator,
     AuditEventOut,
     DocumentOperator,
+    ExpiringItem,
     FieldsUpdate,
     Me,
     ProcessingItem,
@@ -183,4 +187,36 @@ def stats(session: Session = Depends(get_session)) -> QueueStats:
         done=counts.get(JobStatus.done, 0),
         failed=counts.get(JobStatus.failed, 0),
         avg_processing_ms=int(avg) if avg is not None else None,
+    )
+
+
+@router.get("/expiring", response_model=list[ExpiringItem])
+def expiring(days: int = 30, session: Session = Depends(get_session)) -> list[ExpiringItem]:
+    return [ExpiringItem(**r) for r in expiring_rows(session.scalars(select(Application)), days)]
+
+
+@router.get("/expiring.csv")
+def expiring_export(days: int = 30, session: Session = Depends(get_session)) -> Response:
+    data = expiring_csv(expiring_rows(session.scalars(select(Application)), days))
+    return Response(
+        data,
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": 'attachment; filename="expiring.csv"'},
+    )
+
+
+@router.get("/applications/{app_id}/export.csv")
+def export_card(
+    app_id: str, op: Operator = Depends(require_operator), session: Session = Depends(get_session)
+) -> Response:
+    app = session.get(Application, app_id)
+    if app is None:
+        raise HTTPException(404, "Заявка не найдена")
+    audit(session, app.id, f"operator:{op.username}", "card_exported")
+    session.commit()
+    name = quote(f"{app.full_name}.csv")
+    return Response(
+        card_csv(app),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f"attachment; filename=\"card.csv\"; filename*=UTF-8''{name}"},
     )

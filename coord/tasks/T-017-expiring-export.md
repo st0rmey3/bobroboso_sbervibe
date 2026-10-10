@@ -22,3 +22,4 @@ GET /api/operator/expiring?days=30 → documents whose expiry fields (rules cont
 ## Thread
 
 ## Result
+Добавлены `GET /api/operator/expiring?days=30` и `expiring.csv` (backend/app/exports.py, api/operator.py). Проверка: `pytest tests/test_exports.py`. CSV: UTF-8 BOM, `;`. Codex: добавить кнопку (скачивание с Bearer-токеном, не ссылкой).

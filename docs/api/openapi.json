@@ -566,6 +566,149 @@
         ]
       }
     },
+    "/api/operator/expiring": {
+      "get": {
+        "tags": [
+          "operator"
+        ],
+        "summary": "Expiring",
+        "operationId": "expiring_api_operator_expiring_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 30,
+              "title": "Days"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ExpiringItem"
+                  },
+                  "title": "Response Expiring Api Operator Expiring Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operator/expiring.csv": {
+      "get": {
+        "tags": [
+          "operator"
+        ],
+        "summary": "Expiring Export",
+        "operationId": "expiring_export_api_operator_expiring_csv_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 30,
+              "title": "Days"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/operator/applications/{app_id}/export.csv": {
+      "get": {
+        "tags": [
+          "operator"
+        ],
+        "summary": "Export Card",
+        "operationId": "export_card_api_operator_applications__app_id__export_csv_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "app_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "App Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/health": {
       "get": {
         "tags": [
@@ -1147,6 +1290,50 @@
           "failed"
         ],
         "title": "DocumentStatus"
+      },
+      "ExpiringItem": {
+        "properties": {
+          "application_id": {
+            "type": "string",
+            "title": "Application Id"
+          },
+          "full_name": {
+            "type": "string",
+            "title": "Full Name"
+          },
+          "doc_type": {
+            "type": "string",
+            "title": "Doc Type"
+          },
+          "doc_label": {
+            "type": "string",
+            "title": "Doc Label"
+          },
+          "field": {
+            "type": "string",
+            "title": "Field"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "title": "Date"
+          },
+          "days_left": {
+            "type": "integer",
+            "title": "Days Left"
+          }
+        },
+        "type": "object",
+        "required": [
+          "application_id",
+          "full_name",
+          "doc_type",
+          "doc_label",
+          "field",
+          "date",
+          "days_left"
+        ],
+        "title": "ExpiringItem"
       },
       "ExtractedField": {
         "properties": {

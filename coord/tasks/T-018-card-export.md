@@ -22,3 +22,4 @@ GET /api/operator/applications/{id}/export.csv — one row per field: document, 
 ## Thread
 
 ## Result
+Добавлен `GET /api/operator/applications/{id}/export.csv`, пишет аудит `card_exported`. Проверка: `pytest tests/test_exports.py`. Codex: кнопка «Экспорт карточки» в T-005.

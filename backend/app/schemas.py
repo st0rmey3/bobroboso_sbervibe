@@ -1,5 +1,6 @@
 """HTTP contract (source of truth). After changes: `make openapi`, frontend: `npm run gen:api`."""
 
+from datetime import date as Date
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
@@ -163,3 +164,13 @@ class QueueStats(BaseModel):
 class Me(BaseModel):
     username: str
     roles: list[str]
+
+
+class ExpiringItem(BaseModel):
+    application_id: str
+    full_name: str
+    doc_type: str
+    doc_label: str
+    field: str
+    date: Date
+    days_left: int  # negative = already expired
